@@ -1,14 +1,36 @@
 #include <SoftwareSerial.h>
 
+#define WET_SELECTOR 6
+#define DRY_SELECTOR 7
+#define INBRED_SELECTOR 8
+#define HYBRID_SELECTOR 9
+#define LIGHT_SELECTOR 10
+#define MEDIUM_SELECTOR 11 
+#define HEAVY_SELECTOR 12
+ 
+
 SoftwareSerial mySerial(2, 3);  // RX, TX
 String nit_value,phos_value,potas_value,ph_value,soil_salinity_class,mois_value;
 int nit_both,phos_both,potas_both;
-
+int button_selector_season = 0;
+int button_selector_variety = 0;
+int button_selector_texture = 0;
 // hybrid = '';
 // inbred = '';
 void setup() {
   Serial.begin(9600);
   mySerial.begin(4800);
+
+  pinMode(DRY_SELECTOR, INPUT_PULLUP);
+  pinMode(WET_SELECTOR, INPUT);
+
+  pinMode(INBRED_SELECTOR, INPUT_PULLUP);
+  pinMode(HYBRID_SELECTOR, INPUT);
+
+  pinMode(LIGHT_SELECTOR, INPUT_PULLUP);
+  pinMode(MEDIUM_SELECTOR, INPUT_PULLUP);
+  pinMode(HEAVY_SELECTOR, INPUT_PULLUP);
+
 }
 // light nitro -> WET SEASON
 void hybrid_nitrogen_lws(float nitro){
@@ -524,6 +546,7 @@ void inbred_nitrogen_hds(float nitro){
   Serial.print(nit_value);
   Serial.println();
 }
+
 void loop() {
   byte queryData[] = {0x01, 0x03, 0x00, 0x00, 0x00, 0x07, 0x04, 0x08};
   byte receivedData[19];
@@ -532,6 +555,86 @@ void loop() {
   const int maxIterations = 20;  
   mySerial.write(queryData, sizeof(queryData));  // Send the query data to the NPK sensor
   delay(1000);  // Wait for 1 second
+  int lightSwitchState = digitalRead(LIGHT_SELECTOR);
+  int mediumSwitchState = digitalRead(MEDIUM_SELECTOR);
+  int heavySwitchState = digitalRead(HEAVY_SELECTOR);
+
+
+  button_selector_season = digitalRead(DRY_SELECTOR);
+  button_selector_variety = digitalRead(INBRED_SELECTOR);
+  button_selector_texture = digitalRead(LIGHT_SELECTOR);
+
+  if (button_selector_variety == 1) {
+      // light 110
+      if (heavySwitchState == 0 && button_selector_season == 1){
+        Serial.print("Light & Wet HYBRID");
+        Serial.println();
+      // medium 111
+      } else if (lightSwitchState == 1 && mediumSwitchState && heavySwitchState && button_selector_season == 1){
+        Serial.print("Medium & Wet HYBRID");
+        Serial.println();       
+      // heavy 011
+      }else if (lightSwitchState == 0 && button_selector_season == 1){
+        Serial.print("Heavy & Wet HYBRID");
+        Serial.println();
+      }
+      // Dry Season
+      // light 110
+      if (heavySwitchState == 0 && button_selector_season == 0){
+        Serial.print("Light & Dry HYBRID");
+        Serial.println();
+      // medium 111
+      } else if (lightSwitchState == 1 && mediumSwitchState && heavySwitchState && button_selector_season == 0){
+        Serial.print("Medium & Dry HYBRID");
+        Serial.println();       
+      // heavy 011
+      } else if (lightSwitchState == 0 && button_selector_season == 0){
+        Serial.print("Heavy & Dry HYBRID");
+        Serial.println();
+      }
+
+    
+  } else {
+      // if (button_selector_season == 1){
+      //   Serial.print("WET INBRED");
+      //   Serial.println();
+      // }else if (button_selector_season == 0){
+      //   Serial.print("DRY INBRED");
+      //   Serial.println();
+      // }
+      // light 110
+      if (heavySwitchState == 0 && button_selector_season == 1){
+        Serial.print("Light & Wet INBRED");
+        Serial.println();
+      // medium 111
+      } else if (lightSwitchState == 1 && mediumSwitchState && heavySwitchState && button_selector_season == 1){
+        Serial.print("Medium & Wet INBRED");
+        Serial.println();       
+      // heavy 011
+      } else if (lightSwitchState == 0 && button_selector_season == 1){
+        Serial.print("Heavy & Wet INBRED");
+        Serial.println();
+      }
+      // Dry Season
+      // light 110
+      if (heavySwitchState == 0 && button_selector_season == 0){
+        Serial.print("Light & Dry INBRED");
+        Serial.println();
+      // medium 111
+      } else if (lightSwitchState == 1 && mediumSwitchState && heavySwitchState && button_selector_season == 0){
+        Serial.print("Medium & Dry INBRED");
+        Serial.println();       
+      // heavy 011
+      } else if (lightSwitchState == 0 && button_selector_season == 0){
+        Serial.print("Heavy & Dry INBRED");
+        Serial.println();
+      }
+
+
+  }
+
+
+
 
   if (mySerial.available() >= sizeof(receivedData)) {  // Check if there are enough bytes available to read
     mySerial.readBytes(receivedData, sizeof(receivedData));  // Read the received data into the receivedData array
@@ -552,7 +655,7 @@ void loop() {
     float phos = phosphorus;
     float potas =  potassium / 1000.0 / 39.0983 * 100.0;
 
-   // if (hybrid == 1){
+   // if (hybrid == 1){90
     // WET SEASON AREA
     //   if (light && wet_season){
     hybrid_nitrogen_lws(nitro);
@@ -671,222 +774,222 @@ void loop() {
     // 1st, 2nd, 3rd -> Application
 
     // first application
-    if wet season && dry season
-      // do this
-      nitro_split1 = nith_both * 0.30
-      phos_split1 = phos_both
+    // if wet season && dry season
+    //   // do this
+    //   nitro_split1 = nith_both * 0.30
+    //   phos_split1 = phos_both
 
-      if (potas_both < 45) {
-        potas_split1 = potas_both
-      }
-      else{
-        potas_split1 = potas_both * 0.50
-      }
-    // second application
-    if wet season
-      // do this
-      nitro_split2 = nith_both * 0.30
-      phos_split2 = 0
-      potas_split2 = 0
-    else if dry season
-      // do this
-      nitro_split2 = nith_both * 0.20
-      phos_split2 = 0
-      potas_split2 = 0
+    //   if (potas_both < 45) {
+    //     potas_split1 = potas_both
+    //   }
+    //   else{
+    //     potas_split1 = potas_both * 0.50
+    //   }
+    // // second application
+    // if wet season
+    //   // do this
+    //   nitro_split2 = nith_both * 0.30
+    //   phos_split2 = 0
+    //   potas_split2 = 0
+    // else if dry season
+    //   // do this
+    //   nitro_split2 = nith_both * 0.20
+    //   phos_split2 = 0
+    //   potas_split2 = 0
 
-    // third application
-    if wet season
-      // do this
-      nitro_split3 = nith_both * 0.40
-      phos_split3 = 0
-      if (potas_both < 45) {
-        potas_split3 = potas_both * 0.50
-      }
-      else{
-        potas_split3 = potas_both
-      }
-    else if dry season
-      // do this
-      nitro_split3 = nith_both * 0.50
-      phos_split3 = 0
-      if (potas_both < 45) {
-        potas_split3 = potas_both * 0.50
-      }
-      else{
-        potas_split3 = potas_both
-      }
+    // // third application
+    // if wet season
+    //   // do this
+    //   nitro_split3 = nith_both * 0.40
+    //   phos_split3 = 0
+    //   if (potas_both < 45) {
+    //     potas_split3 = potas_both * 0.50
+    //   }
+    //   else{
+    //     potas_split3 = potas_both
+    //   }
+    // else if dry season
+    //   // do this
+    //   nitro_split3 = nith_both * 0.50
+    //   phos_split3 = 0
+    //   if (potas_both < 45) {
+    //     potas_split3 = potas_both * 0.50
+    //   }
+    //   else{
+    //     potas_split3 = potas_both
+    //   }
 
-    // display 
-    // ------------
+    // // display 
+    // // ------------
 
 
-    // Filterizer Contains
-    // 1st Application
-    String value_fil;
-    if (nitro_split1 > 1 && phos_split1 > 1 && potas_split1 > 1){
-        value_fil = "Complete, Triple 14";
-        n_fil = 7.0;
-        p_fil = 7.0;
-        k_fil = 7.0;
-    }
+    // // Filterizer Contains
+    // // 1st Application
+    // String value_fil;
+    // if (nitro_split1 > 1 && phos_split1 > 1 && potas_split1 > 1){
+    //     value_fil = "Complete, Triple 14";
+    //     n_fil = 7.0;
+    //     p_fil = 7.0;
+    //     k_fil = 7.0;
+    // }
 
-    else if (nitro_split1 > 1 && phos_split1 > 1 && potas_split1 < 1){
-        value_fil = "Ammonium Phosphate";
-        n_fil = 8.0;
-        p_fil = 10.0;
-        k_fil = 0.0;
-    }
+    // else if (nitro_split1 > 1 && phos_split1 > 1 && potas_split1 < 1){
+    //     value_fil = "Ammonium Phosphate";
+    //     n_fil = 8.0;
+    //     p_fil = 10.0;
+    //     k_fil = 0.0;
+    // }
 
-    else if (nitro_split1 < 1 && phos_split1 > 1 && potas_split1 < 1){
-        value_fil = "Superphospate";
-        n_fil = 0.0;
-        p_fil = 10.0;
-        k_fil = 0.0;
-    }
+    // else if (nitro_split1 < 1 && phos_split1 > 1 && potas_split1 < 1){
+    //     value_fil = "Superphospate";
+    //     n_fil = 0.0;
+    //     p_fil = 10.0;
+    //     k_fil = 0.0;
+    // }
 
-    else if (nitro_split1 < 1 && phos_split1 < 1 && potas_split1 > 1){
-        value_fil = "Muriate of Potash";
-        n_fil = 0.0;
-        p_fil = 0.0;
-        k_fil = 30.0;
-    }
+    // else if (nitro_split1 < 1 && phos_split1 < 1 && potas_split1 > 1){
+    //     value_fil = "Muriate of Potash";
+    //     n_fil = 0.0;
+    //     p_fil = 0.0;
+    //     k_fil = 30.0;
+    // }
 
         
         
-    if (pH < 6.6) {
-        if (nitro_split1 > 1 && phos_split1 < 1 && potas_split1 < 1){
-            value_fil = "Urea";
-            n_fil = 23.0;
-            p_fil = 0.0;
-            k_fil = 0.0;
-        }
+    // if (pH < 6.6) {
+    //     if (nitro_split1 > 1 && phos_split1 < 1 && potas_split1 < 1){
+    //         value_fil = "Urea";
+    //         n_fil = 23.0;
+    //         p_fil = 0.0;
+    //         k_fil = 0.0;
+    //     }
 
-    }
+    // }
 
-    else {
-        if (nitro_split1 > 1 && phos_split1 < 1 && potas_split1 < 1){
-            value_fil = "Ammonium Sulfate";
-            n_fil = 10.5;
-            p_fil = 0.0;
-            k_fil = 0.0;
-        }
+    // else {
+    //     if (nitro_split1 > 1 && phos_split1 < 1 && potas_split1 < 1){
+    //         value_fil = "Ammonium Sulfate";
+    //         n_fil = 10.5;
+    //         p_fil = 0.0;
+    //         k_fil = 0.0;
+    //     }
 
-    }
-
-
-
-      // divide 
-      float result_dividen1 = nitro_split1 / n_fil;
-      float result_dividep1 = phos_split1 / p_fil;
-      float result_dividek1 = potas_split1 / k_fil;
-
-      float lowest_value1 = min(result_dividen1, min(result_dividep1, result_dividek1));
-      // print value_fil, lowest_value1
+    // }
 
 
-      // multiply
-      float result_multipn1 = lowest_value1 * n_fil;
-      float result_multipp1 = lowest_value1 * p_fil;
-      float result_multipk1 = lowest_value1 * k_fil;
 
-      // minus the result
-      float result_minusn1 = nitro_split1 - result_multipn1;
-      float result_minusp1 = phos_split1 - result_multipp1;
-      float result_minusk1 = potas_split1 - result_multipk1;
-      float nonZeroValue = 0.0;
+    //   // divide 
+    //   float result_dividen1 = nitro_split1 / n_fil;
+    //   float result_dividep1 = phos_split1 / p_fil;
+    //   float result_dividek1 = potas_split1 / k_fil;
 
-      if (result_minusn1 < 1 && result_minusp1 < 1 && result_multipk1 < 1){
-        break;
-      }
+    //   float lowest_value1 = min(result_dividen1, min(result_dividep1, result_dividek1));
+    //   // print value_fil, lowest_value1
 
-      if (result_minusn1 != 0.0) {
-        nonZeroValue = result_minusn1
-      } else if (result_minusp1 != 0.0) {
-        nonZeroValue = result_minusp1
-      } else if (result_multipk1 != 0.0) {
-        nonZeroValue = result_minusk1
-      }
 
-      if (nonZeroValue != 0.0){
-        String value_fil_;
-        float divisor = 0.0;
-        if (result_minusn1 > 1 && result_minusp1 > 1 && result_minusk1 > 1){
-            value_fil_ = "Complete, Triple 14";
-            n_fil = 7.0;
-            p_fil = 7.0;
-            k_fil = 7.0;
-        }
+    //   // multiply
+    //   float result_multipn1 = lowest_value1 * n_fil;
+    //   float result_multipp1 = lowest_value1 * p_fil;
+    //   float result_multipk1 = lowest_value1 * k_fil;
 
-        else if (result_minusn1 > 1 && result_minusp1 > 1 && result_minusk1 < 1){
-            value_fil_ = "Ammonium Phosphate";
-            n_fil = 8.0;
-            p_fil = 10.0;
-            k_fil = 0.0;
-        }
+    //   // minus the result
+    //   float result_minusn1 = nitro_split1 - result_multipn1;
+    //   float result_minusp1 = phos_split1 - result_multipp1;
+    //   float result_minusk1 = potas_split1 - result_multipk1;
+    //   float nonZeroValue = 0.0;
 
-        else if (result_minusn1 < 1 && result_minusp1 > 1 && result_minusk1 < 1){
-            value_fil_ = "Superphospate";
-            n_fil = 0.0;
-            p_fil = 10.0;
-            k_fil = 0.0;
-            divisor = p_fil;
-        }
+    //   if (result_minusn1 < 1 && result_minusp1 < 1 && result_multipk1 < 1){
+    //     break;
+    //   }
 
-        else if (result_minusn1 < 1 && result_minusp1 < 1 && result_minusk1 > 1){
-            value_fil_ = "Muriate of Potash";
-            n_fil = 0.0;
-            p_fil = 0.0;
-            k_fil = 30.0;
-            divisor = k_fil;
-        }
+    //   if (result_minusn1 != 0.0) {
+    //     nonZeroValue = result_minusn1
+    //   } else if (result_minusp1 != 0.0) {
+    //     nonZeroValue = result_minusp1
+    //   } else if (result_multipk1 != 0.0) {
+    //     nonZeroValue = result_minusk1
+    //   }
+
+    //   if (nonZeroValue != 0.0){
+    //     String value_fil_;
+    //     float divisor = 0.0;
+    //     if (result_minusn1 > 1 && result_minusp1 > 1 && result_minusk1 > 1){
+    //         value_fil_ = "Complete, Triple 14";
+    //         n_fil = 7.0;
+    //         p_fil = 7.0;
+    //         k_fil = 7.0;
+    //     }
+
+    //     else if (result_minusn1 > 1 && result_minusp1 > 1 && result_minusk1 < 1){
+    //         value_fil_ = "Ammonium Phosphate";
+    //         n_fil = 8.0;
+    //         p_fil = 10.0;
+    //         k_fil = 0.0;
+    //     }
+
+    //     else if (result_minusn1 < 1 && result_minusp1 > 1 && result_minusk1 < 1){
+    //         value_fil_ = "Superphospate";
+    //         n_fil = 0.0;
+    //         p_fil = 10.0;
+    //         k_fil = 0.0;
+    //         divisor = p_fil;
+    //     }
+
+    //     else if (result_minusn1 < 1 && result_minusp1 < 1 && result_minusk1 > 1){
+    //         value_fil_ = "Muriate of Potash";
+    //         n_fil = 0.0;
+    //         p_fil = 0.0;
+    //         k_fil = 30.0;
+    //         divisor = k_fil;
+    //     }
 
             
             
-        if (pH < 6.6) {
-            if (result_minusn1 > 1 && result_minusp1 < 1 && result_minusk1 < 1){
-                value_fil_ = "Urea";
-                n_fil = 23.0;
-                p_fil = 0.0;
-                k_fil = 0.0;
-                divisor = n_fil;
-            }
+    //     if (pH < 6.6) {
+    //         if (result_minusn1 > 1 && result_minusp1 < 1 && result_minusk1 < 1){
+    //             value_fil_ = "Urea";
+    //             n_fil = 23.0;
+    //             p_fil = 0.0;
+    //             k_fil = 0.0;
+    //             divisor = n_fil;
+    //         }
 
-        }
+    //     }
 
-        else {
-            if (result_minusn1 > 1 && result_minusp1 < 1 && result_minusk1 < 1){
-                value_fil_ = "Ammonium Sulfate";
-                n_fil = 10.5;
-                p_fil = 0.0;
-                k_fil = 0.0;
-                divisor = n_fil;
-            }
+    //     else {
+    //         if (result_minusn1 > 1 && result_minusp1 < 1 && result_minusk1 < 1){
+    //             value_fil_ = "Ammonium Sulfate";
+    //             n_fil = 10.5;
+    //             p_fil = 0.0;
+    //             k_fil = 0.0;
+    //             divisor = n_fil;
+    //         }
 
-        }
-        float nonZeroResult = nonZeroValue / divisor;
-        float result_lastn1 = result_minusn1 * nonZeroResult;
-        float result_lastp1 = result_minusp1 * nonZeroResult;
-        float result_lastk1 = result_minusk1 * nonZeroResult;
+    //     }
+    //     float nonZeroResult = nonZeroValue / divisor;
+    //     float result_lastn1 = result_minusn1 * nonZeroResult;
+    //     float result_lastp1 = result_minusp1 * nonZeroResult;
+    //     float result_lastk1 = result_minusk1 * nonZeroResult;
 
-        // minus
-        float result_last_minusn1 = result_multipn1 - result_lastn1;
-        float result_last_minusp1 = result_multipp1 - result_lastp1;
-        float result_last_minusk1 = result_multipk1 - result_lastk1;
+    //     // minus
+    //     float result_last_minusn1 = result_multipn1 - result_lastn1;
+    //     float result_last_minusp1 = result_multipp1 - result_lastp1;
+    //     float result_last_minusk1 = result_multipk1 - result_lastk1;
 
-        if (result_last_minusn1 < 1 && result_last_minusp1 < 1 && result_last_minusk1 < 1){
-        break;
-        }
-        // print nonZeroResult & value_fil_
-        int get_decimal_1 = int(nonZeroResult * 100) % 100;
-        int divide2_decimal_1 = get_decimal_1 / 2;
-        int get_number_1 = int(nonZeroResult);
+    //     if (result_last_minusn1 < 1 && result_last_minusp1 < 1 && result_last_minusk1 < 1){
+    //     break;
+    //     }
+    //     // print nonZeroResult & value_fil_
+    //     int get_decimal_1 = int(nonZeroResult * 100) % 100;
+    //     int divide2_decimal_1 = get_decimal_1 / 2;
+    //     int get_number_1 = int(nonZeroResult);
 
-        // get_number_ bags & divide2_decimal_1 kg value_fil_
-      }
+    //     // get_number_ bags & divide2_decimal_1 kg value_fil_
+    //   }
 
-      int get_decimal1 = int(lowest_value1 * 100) % 100;
-      int divide2_decimal1 = get_decimal_1 / 2;
-      int get_number1 = int(lowest_value1);
+    //   int get_decimal1 = int(lowest_value1 * 100) % 100;
+    //   int divide2_decimal1 = get_decimal_1 / 2;
+    //   int get_number1 = int(lowest_value1);
 
       // get_number bags & divide2_decimal1 kg value_fil
 
