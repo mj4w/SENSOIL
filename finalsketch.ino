@@ -1,5 +1,8 @@
 #include <SoftwareSerial.h>
-
+// Date
+#include <RTClib.h>
+RTC_DS1307 rtc;
+// SWITCH
 #define WET_SELECTOR 6
 #define DRY_SELECTOR 7
 #define INBRED_SELECTOR 8
@@ -7,30 +10,44 @@
 #define LIGHT_SELECTOR 10
 #define MEDIUM_SELECTOR 11 
 #define HEAVY_SELECTOR 12
- 
 
-SoftwareSerial mySerial(2, 3);  // RX, TX
+/* Mini Thermal Printer 
+  MODEL: CSN-4AL 
+  NOTE! USE 9V 2AMP POWER SUPPLY 
+*/
+#include "Adafruit_Thermal.h"
+/* BAUDRATE
+
+TO CHECK THE BAUDRATE, KINDLY CHECK THE SAMPLE PRINT TEST IN THERMAL PRINTER
+*/
+#define BAUDRATE 9600
+
+SoftwareSerial mySerial1(2, 3);  // TX, RX
+SoftwareSerial mySerial2(6,5); // TX, RX
+
+Adafruit_Thermal printer(&mySerial2);
 String nit_value,phos_value,potas_value,ph_value,soil_salinity_class,mois_value;
 int nit_both,phos_both,potas_both;
 int button_selector_season = 0;
 int button_selector_variety = 0;
 int button_selector_texture = 0;
-// hybrid = '';
-// inbred = '';
 void setup() {
   Serial.begin(9600);
-  mySerial.begin(4800);
+  rtc.begin();
+  rtc.adjust(DateTime(F(__DATE__),F(__TIME__)));
+  // NPK Sensor
+  mySerial1.begin(4800);
+  // Mini Thermal Printer
+  mySerial2.begin(9600);
 
+  printer.begin();
   pinMode(DRY_SELECTOR, INPUT_PULLUP);
   pinMode(WET_SELECTOR, INPUT);
-
   pinMode(INBRED_SELECTOR, INPUT_PULLUP);
   pinMode(HYBRID_SELECTOR, INPUT);
-
   pinMode(LIGHT_SELECTOR, INPUT_PULLUP);
   pinMode(MEDIUM_SELECTOR, INPUT_PULLUP);
   pinMode(HEAVY_SELECTOR, INPUT_PULLUP);
-
 }
 // light nitro -> WET SEASON
 void hybrid_nitrogen_lws(float nitro){
@@ -546,49 +563,66 @@ void inbred_nitrogen_hds(float nitro){
   Serial.print(nit_value);
   Serial.println();
 }
-
 void loop() {
   byte queryData[] = {0x01, 0x03, 0x00, 0x00, 0x00, 0x07, 0x04, 0x08};
   byte receivedData[19];
+  String season,variety,texture;
   float nit_val, phos_val, potas_val, ph_val, ec_val, mois_val;
   int loopCounter = 15;  // Counter to keep track of loop iterations with data
   const int maxIterations = 20;  
-  mySerial.write(queryData, sizeof(queryData));  // Send the query data to the NPK sensor
+  mySerial1.write(queryData, sizeof(queryData));  // Send the query data to the NPK sensor
   delay(1000);  // Wait for 1 second
   int lightSwitchState = digitalRead(LIGHT_SELECTOR);
   int mediumSwitchState = digitalRead(MEDIUM_SELECTOR);
   int heavySwitchState = digitalRead(HEAVY_SELECTOR);
 
-
   button_selector_season = digitalRead(DRY_SELECTOR);
   button_selector_variety = digitalRead(INBRED_SELECTOR);
   button_selector_texture = digitalRead(LIGHT_SELECTOR);
-
+  
   if (button_selector_variety == 1) {
       // light 110
       if (heavySwitchState == 0 && button_selector_season == 1){
+        season = "WET";
+        texture = "LIGHT";
+        variety = "HYBRID";
         Serial.print("Light & Wet HYBRID");
         Serial.println();
       // medium 111
       } else if (lightSwitchState == 1 && mediumSwitchState && heavySwitchState && button_selector_season == 1){
+        season = "WET";
+        texture = "MEDIUM";
+        variety = "HYBRID";
         Serial.print("Medium & Wet HYBRID");
         Serial.println();       
       // heavy 011
       }else if (lightSwitchState == 0 && button_selector_season == 1){
+        season = "WET";
+        texture = "HEAVY";
+        variety = "HYBRID";
         Serial.print("Heavy & Wet HYBRID");
         Serial.println();
       }
       // Dry Season
       // light 110
       if (heavySwitchState == 0 && button_selector_season == 0){
+        season = "DRY";
+        texture = "LIGHT";
+        variety = "HYBRID";
         Serial.print("Light & Dry HYBRID");
         Serial.println();
       // medium 111
       } else if (lightSwitchState == 1 && mediumSwitchState && heavySwitchState && button_selector_season == 0){
+        season = "DRY";
+        texture = "MEDIUM";
+        variety = "HYBRID";
         Serial.print("Medium & Dry HYBRID");
         Serial.println();       
       // heavy 011
       } else if (lightSwitchState == 0 && button_selector_season == 0){
+        season = "DRY";
+        texture = "HEAVY";
+        variety = "HYBRID";
         Serial.print("Heavy & Dry HYBRID");
         Serial.println();
       }
@@ -604,28 +638,46 @@ void loop() {
       // }
       // light 110
       if (heavySwitchState == 0 && button_selector_season == 1){
+        season = "WET";
+        texture = "LIGHT";
+        variety = "INBRED";
         Serial.print("Light & Wet INBRED");
         Serial.println();
       // medium 111
       } else if (lightSwitchState == 1 && mediumSwitchState && heavySwitchState && button_selector_season == 1){
+        season = "WET";
+        texture = "MEDIUM";
+        variety = "INBRED";
         Serial.print("Medium & Wet INBRED");
         Serial.println();       
       // heavy 011
       } else if (lightSwitchState == 0 && button_selector_season == 1){
+        season = "WET";
+        texture = "HEAVY";
+        variety = "INBRED";
         Serial.print("Heavy & Wet INBRED");
         Serial.println();
       }
       // Dry Season
       // light 110
       if (heavySwitchState == 0 && button_selector_season == 0){
+        season = "DRY";
+        texture = "LIGHT";
+        variety = "INBRED";
         Serial.print("Light & Dry INBRED");
         Serial.println();
       // medium 111
       } else if (lightSwitchState == 1 && mediumSwitchState && heavySwitchState && button_selector_season == 0){
+        season = "DRY";
+        texture = "MEDIUM";
+        variety = "INBRED";
         Serial.print("Medium & Dry INBRED");
         Serial.println();       
       // heavy 011
       } else if (lightSwitchState == 0 && button_selector_season == 0){
+        season = "DRY";
+        texture = "HEAVY";
+        variety = "INBRED";
         Serial.print("Heavy & Dry INBRED");
         Serial.println();
       }
@@ -634,10 +686,8 @@ void loop() {
   }
 
 
-
-
-  if (mySerial.available() >= sizeof(receivedData)) {  // Check if there are enough bytes available to read
-    mySerial.readBytes(receivedData, sizeof(receivedData));  // Read the received data into the receivedData array
+  if (mySerial1.available() >= sizeof(receivedData)) {  // Check if there are enough bytes available to read
+    mySerial1.readBytes(receivedData, sizeof(receivedData));  // Read the received data into the receivedData array
     // Parse and print the received data in decimal format
     unsigned int soilHumidity = (receivedData[3] << 8) | receivedData[4];
     // unsigned int soilTemperature = (receivedData[5] << 8) | receivedData[6];
@@ -1015,10 +1065,132 @@ void loop() {
     loopCounter++;
 
   }
+  else {
+    DateTime date_obj = rtc.now();
+    // Center the image and print the header
+    printer.justify('C');
+    printer.setSize('L');
+    printer.boldOn();
+    printer.println(F("S E N S O I L"));
+    printer.boldOff();
+
+    printer.println();
+
+    // Center the Test No.
+    printer.justify('C');
+    printer.setSize('S');
+    printer.print("Test No. ");
+    printer.print("001");
+    printer.println();
+
+    // Center the date
+    printer.justify('C');
+    printer.setSize('S');
+    printer.print("Date: ");
+    printer.print("May 10, 2024");
+    printer.println();
+
+    // Separator
+    printer.justify('C');
+    printer.setSize('S');
+    printer.println(F("--------------------------------"));
+
+    printer.setSize('S');
+
+    printer.print("    SEASON:");
+    printer.print(season);
+    printer.println("    TEXTURE:");
+    printer.print(texture);
+    printer.println("    VARIETY:");
+    printer.print(variety);
+    printer.println();
+
+    printer.justify('L');
+    printer.println(F("     PARAMETER      VALUE"));
+
+    float nitrogenValue = 1.97;
+    float phosphorusValue = 12.00;
+    float potassiumValue = 11.97;
+    float pHValue = 2.34;
+    float ecValue = 3.22;
+    float moistureValue = 10.34;
+
+    printer.justify('L');
+    printWithSpace(printer, "     Nitrogen-------",nitrogenValue, "%");
+    printWithSpace(printer, "     Phosphorus-----", phosphorusValue, "ppm");
+    printWithSpace(printer, "     Potassium------", potassiumValue, "cmol/kg");
+    printWithSpace(printer, "     pH-------------", pHValue, " ");
+    printWithSpace(printer, "     EC-------------", ecValue, "mS/cm");
+    printWithSpace(printer, "     Moisture-------", moistureValue, "%");
+
+
+    printer.println(F("--------------------------------"));
+    printer.justify('C'); // center the image
+    printer.setSize('M');
+    printer.boldOn();
+    printer.println(F("NUTRIENT RECOMMENDATION"));
+    printer.boldOff();
+    printer.setSize('S');
+    printer.println(F("kg"));
+
+
+    printer.feed(3); // Move to the next line
+
+
+
+
+
+    // printer.justify('C');
+    // printer.setSize('S');
+    // printer.boldOn();
+    // printer.print("PARAMETERS-----------");
+    // printer.print("VALUE");
+    // printer.boldOff();
+    // printer.println();
+
+    // printer.justify('C');
+    // printer.setSize('S');
+    // printer.print("Nitrogen----------");
+    // printer.print("1.97");
+    // printer.print(" %");
+    // printer.println();
+
+    // printer.justify('C');
+    // printer.setSize('S');
+    // printer.print("Phosphorus----------");
+    // printer.print("12.00");
+    // printer.print(" ppm");
+    // printer.println();
+
+    // printer.justify('C');
+    // printer.setSize('S');
+    // printer.print("Potassium---------");
+    // printer.print("11.97");
+    // printer.print(" cmol/kg");
+    // printer.println();
+
+
+
+    printer.sleep();      // Tell printer to sleep
+    printer.wake();       // MUST wake() before printing again, even if reset
+    printer.setDefault(); // Restore printer to defaults
+  }
+
+
   if (loopCounter > maxIterations){
     while (true) {
     }
   }
 
+}
+void printWithSpace(Adafruit_Thermal &printer, const char *parameter, float value, const char *unit) {
+  printer.print(parameter);
+  int spaces = 15 - strlen(parameter); // Adjust the number of spaces based on your layout
+  for (int i = 0; i < spaces; i++) {
+    printer.print(" ");
+  }
+  printer.print(value, 2); // Assuming you want to print values with 2 decimal places
+  printer.print(unit);
+  printer.println();
 }
 
