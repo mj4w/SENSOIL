@@ -10,6 +10,7 @@ RTC_DS1307 rtc;
 #define LIGHT_SELECTOR 10
 #define MEDIUM_SELECTOR 11 
 #define HEAVY_SELECTOR 12
+#define PRINT_BUTTON 13
 
 /* Mini Thermal Printer 
   MODEL: CSN-4AL 
@@ -31,6 +32,8 @@ int nit_both,phos_both,potas_both;
 int button_selector_season = 0;
 int button_selector_variety = 0;
 int button_selector_texture = 0;
+int buttonState = 0;
+int oldButtonState = LOW;
 void setup() {
   Serial.begin(9600);
   rtc.begin();
@@ -48,6 +51,8 @@ void setup() {
   pinMode(LIGHT_SELECTOR, INPUT_PULLUP);
   pinMode(MEDIUM_SELECTOR, INPUT_PULLUP);
   pinMode(HEAVY_SELECTOR, INPUT_PULLUP);
+  pinMode(PRINT_BUTTON, INPUT_PULLUP); 
+
 }
 // light nitro -> WET SEASON
 void hybrid_nitrogen_lws(float nitro){
@@ -1066,80 +1071,126 @@ void loop() {
 
   }
   else {
-    DateTime date_obj = rtc.now();
-    // Center the image and print the header
-    printer.justify('C');
-    printer.setSize('L');
-    printer.boldOn();
-    printer.println(F("S E N S O I L"));
-    printer.boldOff();
+    buttonState  = digitalRead(PRINT_BUTTON);
+    Serial.print(buttonState);
+    Serial.println(PRINT_BUTTON);
+    if (buttonState != oldButtonState &&
+      buttonState == HIGH)
+    {
+      DateTime date_obj = rtc.now();
+      // Center the image and print the header
+      printer.justify('C');
+      printer.setSize('L');
+      printer.boldOn();
+      printer.println(F("S E N S O I L"));
+      printer.boldOff();
 
-    printer.println();
+      printer.println();
 
-    // Center the Test No.
-    printer.justify('C');
-    printer.setSize('S');
-    printer.print("Test No. ");
-    printer.print("001");
-    printer.println();
+      printer.setSize('S');
+      printer.print("Test No. ");
+      printer.print("001");
+      printer.println();
 
-    // Center the date
-    printer.justify('C');
-    printer.setSize('S');
-    printer.print("Date: ");
-    printer.print("May 10, 2024");
-    printer.println();
+      printer.setSize('S');
+      printer.print("Date: ");
+      printer.print("May 10, 2024");
+      printer.println();
 
-    // Separator
-    printer.justify('C');
-    printer.setSize('S');
-    printer.println(F("--------------------------------"));
+      // Separator
 
-    printer.setSize('S');
+      printer.println();
+      printer.setSize('S');
+      printer.justify('C');
+      printWithString(printer, "SEASON: ",season);
+      printWithString(printer, "TEXTURE: ", texture);
+      printWithString(printer, "VARIETY: ", variety);
 
-    printer.print("    SEASON:");
-    printer.print(season);
-    printer.println("    TEXTURE:");
-    printer.print(texture);
-    printer.println("    VARIETY:");
-    printer.print(variety);
-    printer.println();
+      printer.println();
+      printer.justify('L');
+      printer.println(F("   PARAMETER     VALUE"));
 
-    printer.justify('L');
-    printer.println(F("     PARAMETER      VALUE"));
+      float nitrogenValue = 1.97;
+      float phosphorusValue = 12.00;
+      float potassiumValue = 11.97;
+      float pHValue = 2.34;
+      float ecValue = 3.22;
+      float moistureValue = 10.34;
 
-    float nitrogenValue = 1.97;
-    float phosphorusValue = 12.00;
-    float potassiumValue = 11.97;
-    float pHValue = 2.34;
-    float ecValue = 3.22;
-    float moistureValue = 10.34;
-
-    printer.justify('L');
-    printWithSpace(printer, "     Nitrogen-------",nitrogenValue, "%");
-    printWithSpace(printer, "     Phosphorus-----", phosphorusValue, "ppm");
-    printWithSpace(printer, "     Potassium------", potassiumValue, "cmol/kg");
-    printWithSpace(printer, "     pH-------------", pHValue, " ");
-    printWithSpace(printer, "     EC-------------", ecValue, "mS/cm");
-    printWithSpace(printer, "     Moisture-------", moistureValue, "%");
+      printer.justify('L');
+      printWithSpace(printer, "   Nitrogen-------",nitrogenValue, "%");
+      printWithSpace(printer, "   Phosphorus-----", phosphorusValue, "ppm");
+      printWithSpace(printer, "   Potassium------", potassiumValue, "cmol/kg");
+      printWithSpace(printer, "   pH-------------", pHValue, " ");
+      printWithSpace(printer, "   EC-------------", ecValue, "mS/cm");
+      printWithSpace(printer, "   Moisture-------", moistureValue, "%");
 
 
-    printer.println(F("--------------------------------"));
-    printer.justify('C'); // center the image
-    printer.setSize('M');
-    printer.boldOn();
-    printer.println(F("NUTRIENT RECOMMENDATION"));
-    printer.boldOff();
-    printer.setSize('S');
-    printer.println(F("kg"));
+      printer.println("--------------------------------");
+      printer.justify('C'); // center the image
+      printer.boldOn();
+      printer.println(F("NUTRIENT RECOMMENDATION"));
+      printer.boldOff();
+      printer.setSize('S');
+      printer.println(F("kg/ha"));
 
+      printer.println();
 
-    printer.feed(3); // Move to the next line
+      printer.setSize('S');
+      printer.justify('C');
+      printWithFloat(printer, "N:",nitrogenValue);
+      printWithFloat(printer, "P:", phosphorusValue);
+      printWithFloat(printer, "K:", potassiumValue);
 
+      printer.println("--------------------------------");
+      printer.justify('C'); 
+      printer.boldOn();
+      printer.println(F("FERTILIZER RECOMMENDATION"));
+      printer.boldOff();
+      printer.setSize('S');
+      printer.println(F("(per ha)"));
 
+      printer.println();
+      printer.justify('C');
+      printer.print("Basal Application: ");
+      const char *basal = "10-20 bags, Organic Fertilizer";
 
+      // Print centered text
+      printer.println();
+      printer.justify('C');
+      printCenteredText(printer, basal);
 
+      printer.println();
 
+      const char *topdressing1 = "1st TopDressing(5-7 DAT):";
+      printCenteredText(printer, topdressing1);
+      printer.println();
+      const char *topdressing2 = "2nd TopDressing(20-24 DAT):";
+      printCenteredText(printer, topdressing2);
+      printer.println();
+      const char *topdressing3 = "3rd TopDressing(30-35 DAT):";
+      printCenteredText(printer, topdressing3);
+      printer.println();
+
+      printer.justify('C');
+      printer.setSize('S');
+      printer.print("It is recommended to test your");
+      printer.println();
+      printer.print("soil every planting season for");
+      printer.println();
+      printer.print("efficient farming. Thank You!");
+      printer.println();
+      printer.boldOn();
+      printer.println();
+      printer.println("Produced by: SENSOIL @2024");
+      printer.boldOff();
+      printer.feed(3); 
+      
+      printer.sleep();      // Tell printer to sleep
+      printer.wake();       // MUST wake() before printing again, even if reset
+      printer.setDefault(); // Restore printer to defaults
+    }
+    oldButtonState = buttonState;
     // printer.justify('C');
     // printer.setSize('S');
     // printer.boldOn();
@@ -1171,9 +1222,7 @@ void loop() {
 
 
 
-    printer.sleep();      // Tell printer to sleep
-    printer.wake();       // MUST wake() before printing again, even if reset
-    printer.setDefault(); // Restore printer to defaults
+
   }
 
 
@@ -1185,12 +1234,37 @@ void loop() {
 }
 void printWithSpace(Adafruit_Thermal &printer, const char *parameter, float value, const char *unit) {
   printer.print(parameter);
-  int spaces = 15 - strlen(parameter); // Adjust the number of spaces based on your layout
+  int spaces = 15 - strlen(parameter); 
+  for (int i = 0; i < spaces; i++) {
+    printer.print(" ");
+  }
+  printer.print(value, 2);
+  printer.print(unit);
+  printer.println();
+}
+
+void printWithString(Adafruit_Thermal &printer, const char *parameter, const String &value) {
+  printer.print(parameter);
+  int spaces = 10 - strlen(parameter); 
+  for (int i = 0; i < spaces; i++) {
+    printer.print(" ");
+  }
+  printer.println(value.c_str());
+}
+void printWithFloat(Adafruit_Thermal &printer, const char *parameter, float value) {
+  printer.print(parameter);
+  int spaces = 10 - strlen(parameter); // Adjust the number of spaces based on your layout
   for (int i = 0; i < spaces; i++) {
     printer.print(" ");
   }
   printer.print(value, 2); // Assuming you want to print values with 2 decimal places
-  printer.print(unit);
   printer.println();
+}
+void printCenteredText(Adafruit_Thermal &printer, const char *text) {
+  int spaces = (32 - strlen(text)) / 2;  // Adjust the total width (32) based on your layout
+  for (int i = 0; i < spaces; i++) {
+    printer.print(" ");
+  }
+  printer.println(text);
 }
 
