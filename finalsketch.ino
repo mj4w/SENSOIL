@@ -1,7 +1,8 @@
 #include <SoftwareSerial.h>
-// Date
-#include <RTClib.h>
-RTC_DS1307 rtc;
+#include <SD.h>
+#include <SPI.h>
+#include <Arduino.h>
+#include <DS3231-RTC.h>
 // SWITCH
 #define WET_SELECTOR 6
 #define DRY_SELECTOR 7
@@ -12,6 +13,11 @@ RTC_DS1307 rtc;
 #define HEAVY_SELECTOR 12
 #define PRINT_BUTTON 13
 
+File myFile;
+int pinCS = 10;
+
+RTClib myRTC;
+DS3231 Clock;
 /* Mini Thermal Printer 
   MODEL: CSN-4AL 
   NOTE! USE 9V 2AMP POWER SUPPLY 
@@ -21,13 +27,14 @@ RTC_DS1307 rtc;
 
 TO CHECK THE BAUDRATE, KINDLY CHECK THE SAMPLE PRINT TEST IN THERMAL PRINTER
 */
-#define BAUDRATE 9600
+// #define BAUDRATE 9600
 
-SoftwareSerial mySerial1(2, 3);  // TX, RX
+SoftwareSerial mySerial1(2,3);
 SoftwareSerial mySerial2(6,5); // TX, RX
-
 Adafruit_Thermal printer(&mySerial2);
 String nit_value,phos_value,potas_value,ph_value,soil_salinity_class,mois_value;
+String season,variety,texture;
+float nitro,phos,potas,pH,ec,moisture;
 int nit_both,phos_both,potas_both;
 int button_selector_season = 0;
 int button_selector_variety = 0;
@@ -36,12 +43,22 @@ int buttonState = 0;
 int oldButtonState = LOW;
 void setup() {
   Serial.begin(9600);
-  rtc.begin();
-  rtc.adjust(DateTime(F(__DATE__),F(__TIME__)));
   // NPK Sensor
   mySerial1.begin(4800);
   // Mini Thermal Printer
   mySerial2.begin(9600);
+
+  pinMode(pinCS, OUTPUT);
+  while (!Serial) {
+    yield();
+  }
+  if (SD.begin()) {
+    Serial.println("SD card is ready to use.");
+  } else {
+    Serial.println("SD card initialize failed");
+    return;
+  }
+
 
   printer.begin();
   pinMode(DRY_SELECTOR, INPUT_PULLUP);
@@ -571,7 +588,7 @@ void inbred_nitrogen_hds(float nitro){
 void loop() {
   byte queryData[] = {0x01, 0x03, 0x00, 0x00, 0x00, 0x07, 0x04, 0x08};
   byte receivedData[19];
-  String season,variety,texture;
+
   float nit_val, phos_val, potas_val, ph_val, ec_val, mois_val;
   int loopCounter = 15;  // Counter to keep track of loop iterations with data
   const int maxIterations = 20;  
@@ -634,13 +651,13 @@ void loop() {
 
     
   } else {
-      // if (button_selector_season == 1){
-      //   Serial.print("WET INBRED");
-      //   Serial.println();
-      // }else if (button_selector_season == 0){
-      //   Serial.print("DRY INBRED");
-      //   Serial.println();
-      // }
+      if (button_selector_season == 1){
+        Serial.print("WET INBRED");
+        Serial.println();
+      }else if (button_selector_season == 0){
+        Serial.print("DRY INBRED");
+        Serial.println();
+      }
       // light 110
       if (heavySwitchState == 0 && button_selector_season == 1){
         season = "WET";
@@ -689,8 +706,7 @@ void loop() {
 
 
   }
-
-
+  Serial.print(mySerial1.available());
   if (mySerial1.available() >= sizeof(receivedData)) {  // Check if there are enough bytes available to read
     mySerial1.readBytes(receivedData, sizeof(receivedData));  // Read the received data into the receivedData array
     // Parse and print the received data in decimal format
@@ -703,12 +719,12 @@ void loop() {
     unsigned int potassium = (receivedData[15] << 8) | receivedData[16];
 
     
-    float moisture = soilHumidity / 10.0;
-    float ec = soilConductivity / 1000.0; 
-    float pH = soilPH / 10.0;
-    float nitro = nitrogen / 1000.0 * 10.0;
-    float phos = phosphorus;
-    float potas =  potassium / 1000.0 / 39.0983 * 100.0;
+    moisture = soilHumidity / 10.0;
+    ec = soilConductivity / 1000.0; 
+    pH = soilPH / 10.0;
+    nitro = nitrogen / 1000.0 * 10.0;
+    phos = phosphorus;
+    potas =  potassium / 1000.0 / 39.0983 * 100.0;
 
    // if (hybrid == 1){90
     // WET SEASON AREA
@@ -1047,24 +1063,6 @@ void loop() {
     //   int get_number1 = int(lowest_value1);
 
       // get_number bags & divide2_decimal1 kg value_fil
-
-
-
-
-
-
-
-
-
-
-        
-
-
-
-
-
-
-
     delay(3000);
     
     loopCounter++;
@@ -1072,13 +1070,9 @@ void loop() {
   }
   else {
     buttonState  = digitalRead(PRINT_BUTTON);
-    Serial.print(buttonState);
-    Serial.println(PRINT_BUTTON);
     if (buttonState != oldButtonState &&
       buttonState == HIGH)
     {
-      DateTime date_obj = rtc.now();
-      // Center the image and print the header
       printer.justify('C');
       printer.setSize('L');
       printer.boldOn();
@@ -1094,7 +1088,7 @@ void loop() {
 
       printer.setSize('S');
       printer.print("Date: ");
-      printer.print("May 10, 2024");
+      printer.print(__DATE__);
       printer.println();
 
       // Separator
@@ -1110,20 +1104,13 @@ void loop() {
       printer.justify('L');
       printer.println(F("   PARAMETER     VALUE"));
 
-      float nitrogenValue = 1.97;
-      float phosphorusValue = 12.00;
-      float potassiumValue = 11.97;
-      float pHValue = 2.34;
-      float ecValue = 3.22;
-      float moistureValue = 10.34;
-
       printer.justify('L');
-      printWithSpace(printer, "   Nitrogen-------",nitrogenValue, "%");
-      printWithSpace(printer, "   Phosphorus-----", phosphorusValue, "ppm");
-      printWithSpace(printer, "   Potassium------", potassiumValue, "cmol/kg");
-      printWithSpace(printer, "   pH-------------", pHValue, " ");
-      printWithSpace(printer, "   EC-------------", ecValue, "mS/cm");
-      printWithSpace(printer, "   Moisture-------", moistureValue, "%");
+      printWithSpace(printer, "   Nitrogen-------",nitro, "%");
+      printWithSpace(printer, "   Phosphorus-----", phos, "ppm");
+      printWithSpace(printer, "   Potassium------", potas, "cmol/kg");
+      printWithSpace(printer, "   pH-------------", pH, " ");
+      printWithSpace(printer, "   EC-------------", ec, "mS/cm");
+      printWithSpace(printer, "   Moisture-------", moisture, "%");
 
 
       printer.println("--------------------------------");
@@ -1138,9 +1125,9 @@ void loop() {
 
       printer.setSize('S');
       printer.justify('C');
-      printWithFloat(printer, "N:",nitrogenValue);
-      printWithFloat(printer, "P:", phosphorusValue);
-      printWithFloat(printer, "K:", potassiumValue);
+      printWithFloat(printer, "N:",nitro);
+      printWithFloat(printer, "P:", phos);
+      printWithFloat(printer, "K:", potas);
 
       printer.println("--------------------------------");
       printer.justify('C'); 
@@ -1191,41 +1178,53 @@ void loop() {
       printer.setDefault(); // Restore printer to defaults
     }
     oldButtonState = buttonState;
-    // printer.justify('C');
-    // printer.setSize('S');
-    // printer.boldOn();
-    // printer.print("PARAMETERS-----------");
-    // printer.print("VALUE");
-    // printer.boldOff();
-    // printer.println();
-
-    // printer.justify('C');
-    // printer.setSize('S');
-    // printer.print("Nitrogen----------");
-    // printer.print("1.97");
-    // printer.print(" %");
-    // printer.println();
-
-    // printer.justify('C');
-    // printer.setSize('S');
-    // printer.print("Phosphorus----------");
-    // printer.print("12.00");
-    // printer.print(" ppm");
-    // printer.println();
-
-    // printer.justify('C');
-    // printer.setSize('S');
-    // printer.print("Potassium---------");
-    // printer.print("11.97");
-    // printer.print(" cmol/kg");
-    // printer.println();
-
-
-
-
   }
+  // DATA LOGGING
+  String currentYear = String(__DATE__).substring(7);
+  // String fileType = "Sensoil_Data_";
+  // Create/Open File
+  String fileName = currentYear + "data.csv";
+  myFile = SD.open(fileName, FILE_WRITE);
+  
+  if (myFile) {
+    Serial.println(F("Writing to the file...."));
+    // write to file
+    myFile.println(__DATE__);
+    // myFile.print(__TIME__);
+    myFile.print(nitro);
+    myFile.print(" ");
+    myFile.print(phos);
+    myFile.print(" ");
+    myFile.print(potas); 
+    myFile.print(" ");   
+    myFile.print(pH); 
+    myFile.print(" ");   
+    myFile.print(ec); 
+    myFile.print(" ");   
+    myFile.print(moisture); 
+    myFile.print(" ");   
+    myFile.print(texture);  
+    myFile.print(" ");  
+    myFile.print(season);    
+    myFile.print(" ");
+    myFile.print(variety);    
 
-
+    myFile.close();
+    Serial.println(F("Done"));
+  } else {
+    Serial.println("Error opening " + fileName);
+  }
+  // Reading the file
+  myFile = SD.open(fileName);
+  if (myFile) {
+    Serial.println(F("Read:"));
+    while (myFile.available()) {
+      Serial.write(myFile.read());
+    }
+    myFile.close();
+  } else {
+    Serial.println("Error opening " + fileName);
+  }
   if (loopCounter > maxIterations){
     while (true) {
     }
