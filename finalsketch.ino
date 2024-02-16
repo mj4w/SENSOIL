@@ -4,18 +4,19 @@
 #include <Arduino.h>
 #include <DS3231-RTC.h>
 // SWITCH
-#define WET_SELECTOR 6
-#define DRY_SELECTOR 7
-#define INBRED_SELECTOR 8
-#define HYBRID_SELECTOR 9
-#define LIGHT_SELECTOR 10
-#define MEDIUM_SELECTOR 11 
-#define HEAVY_SELECTOR 12
+#define WET_SELECTOR 23
+#define DRY_SELECTOR 22
+
+#define INBRED_SELECTOR 24
+#define HYBRID_SELECTOR 25
+
+#define LIGHT_SELECTOR 26 
+#define MEDIUM_SELECTOR 27
+#define HEAVY_SELECTOR 28
+
 #define PRINT_BUTTON 13
 
 File myFile;
-int pinCS = 10;
-
 RTClib myRTC;
 DS3231 Clock;
 /* Mini Thermal Printer 
@@ -27,10 +28,10 @@ DS3231 Clock;
 
 TO CHECK THE BAUDRATE, KINDLY CHECK THE SAMPLE PRINT TEST IN THERMAL PRINTER
 */
-// #define BAUDRATE 9600
+#define BAUDRATE 9600
 
-SoftwareSerial mySerial1(2,3);
-SoftwareSerial mySerial2(6,5); // TX, RX
+SoftwareSerial mySerial1(4,5);
+SoftwareSerial mySerial2(18,19); // TX, RX
 Adafruit_Thermal printer(&mySerial2);
 String nit_value,phos_value,potas_value,ph_value,soil_salinity_class,mois_value;
 String season,variety,texture;
@@ -42,24 +43,12 @@ int button_selector_texture = 0;
 int buttonState = 0;
 int oldButtonState = LOW;
 void setup() {
+  int pinCS = 53;
   Serial.begin(9600);
   // NPK Sensor
   mySerial1.begin(4800);
   // Mini Thermal Printer
   mySerial2.begin(9600);
-
-  pinMode(pinCS, OUTPUT);
-  while (!Serial) {
-    yield();
-  }
-  if (SD.begin()) {
-    Serial.println("SD card is ready to use.");
-  } else {
-    Serial.println("SD card initialize failed");
-    return;
-  }
-
-
   printer.begin();
   pinMode(DRY_SELECTOR, INPUT_PULLUP);
   pinMode(WET_SELECTOR, INPUT);
@@ -69,6 +58,13 @@ void setup() {
   pinMode(MEDIUM_SELECTOR, INPUT_PULLUP);
   pinMode(HEAVY_SELECTOR, INPUT_PULLUP);
   pinMode(PRINT_BUTTON, INPUT_PULLUP); 
+  pinMode(pinCS, OUTPUT);
+  if (SD.begin()) {
+    Serial.println("SD card is ready to use.");
+  } else {
+    Serial.println("SD card initialize failed");
+    return;
+  }
 
 }
 // light nitro -> WET SEASON
@@ -651,13 +647,13 @@ void loop() {
 
     
   } else {
-      if (button_selector_season == 1){
-        Serial.print("WET INBRED");
-        Serial.println();
-      }else if (button_selector_season == 0){
-        Serial.print("DRY INBRED");
-        Serial.println();
-      }
+      // if (button_selector_season == 1){
+      //   Serial.print("WET INBRED");
+      //   Serial.println();
+      // }else if (button_selector_season == 0){
+      //   Serial.print("DRY INBRED");
+      //   Serial.println();
+      // }
       // light 110
       if (heavySwitchState == 0 && button_selector_season == 1){
         season = "WET";
@@ -706,7 +702,6 @@ void loop() {
 
 
   }
-  Serial.print(mySerial1.available());
   if (mySerial1.available() >= sizeof(receivedData)) {  // Check if there are enough bytes available to read
     mySerial1.readBytes(receivedData, sizeof(receivedData));  // Read the received data into the receivedData array
     // Parse and print the received data in decimal format
@@ -1068,167 +1063,165 @@ void loop() {
     loopCounter++;
 
   }
-  else {
-    buttonState  = digitalRead(PRINT_BUTTON);
-    if (buttonState != oldButtonState &&
-      buttonState == HIGH)
-    {
-      printer.justify('C');
-      printer.setSize('L');
-      printer.boldOn();
-      printer.println(F("S E N S O I L"));
-      printer.boldOff();
+  buttonState  = digitalRead(PRINT_BUTTON);
+  if (buttonState != oldButtonState &&
+    buttonState == HIGH)
+  {
+    printer.justify('C');
+    printer.setSize('L');
+    printer.boldOn();
+    printer.println(F("S E N S O I L"));
+    printer.boldOff();
 
-      printer.println();
+    printer.println();
 
-      printer.setSize('S');
-      printer.print("Test No. ");
-      printer.print("001");
-      printer.println();
+    // printer.setSize('S');
+    // printer.print("Test No. ");
+    // printer.print("001");
+    // printer.println();
 
-      printer.setSize('S');
-      printer.print("Date: ");
-      printer.print(__DATE__);
-      printer.println();
+    printer.setSize('S');
+    printer.print("Date: ");
+    printer.print(__DATE__);
+    printer.println();
 
-      // Separator
+    // Separator
 
-      printer.println();
-      printer.setSize('S');
-      printer.justify('C');
-      printWithString(printer, "SEASON: ",season);
-      printWithString(printer, "TEXTURE: ", texture);
-      printWithString(printer, "VARIETY: ", variety);
+    printer.println();
+    printer.setSize('S');
+    printer.justify('C');
+    printWithString(printer, "SEASON: ",season);
+    printWithString(printer, "TEXTURE: ", texture);
+    printWithString(printer, "VARIETY: ", variety);
 
-      printer.println();
-      printer.justify('L');
-      printer.println(F("   PARAMETER     VALUE"));
+    printer.println();
+    printer.justify('L');
+    printer.println(F("   PARAMETER     VALUE"));
 
-      printer.justify('L');
-      printWithSpace(printer, "   Nitrogen-------",nitro, "%");
-      printWithSpace(printer, "   Phosphorus-----", phos, "ppm");
-      printWithSpace(printer, "   Potassium------", potas, "cmol/kg");
-      printWithSpace(printer, "   pH-------------", pH, " ");
-      printWithSpace(printer, "   EC-------------", ec, "mS/cm");
-      printWithSpace(printer, "   Moisture-------", moisture, "%");
+    printer.justify('L');
+    printWithSpace(printer, "   Nitrogen-------",nitro, "%");
+    printWithSpace(printer, "   Phosphorus-----", phos, "ppm");
+    printWithSpace(printer, "   Potassium------", potas, "cmol/kg");
+    printWithSpace(printer, "   pH-------------", pH, " ");
+    printWithSpace(printer, "   EC-------------", ec, "mS/cm");
+    printWithSpace(printer, "   Moisture-------", moisture, "%");
 
 
-      printer.println("--------------------------------");
-      printer.justify('C'); // center the image
-      printer.boldOn();
-      printer.println(F("NUTRIENT RECOMMENDATION"));
-      printer.boldOff();
-      printer.setSize('S');
-      printer.println(F("kg/ha"));
+    printer.println("--------------------------------");
+    printer.justify('C'); // center the image
+    printer.boldOn();
+    printer.println(F("NUTRIENT RECOMMENDATION"));
+    printer.boldOff();
+    printer.setSize('S');
+    printer.println(F("kg/ha"));
 
-      printer.println();
+    printer.println();
 
-      printer.setSize('S');
-      printer.justify('C');
-      printWithFloat(printer, "N:",nitro);
-      printWithFloat(printer, "P:", phos);
-      printWithFloat(printer, "K:", potas);
+    printer.setSize('S');
+    printer.justify('C');
+    printWithFloat(printer, "N:",nitro);
+    printWithFloat(printer, "P:", phos);
+    printWithFloat(printer, "K:", potas);
 
-      printer.println("--------------------------------");
-      printer.justify('C'); 
-      printer.boldOn();
-      printer.println(F("FERTILIZER RECOMMENDATION"));
-      printer.boldOff();
-      printer.setSize('S');
-      printer.println(F("(per ha)"));
+    printer.println("--------------------------------");
+    printer.justify('C'); 
+    printer.boldOn();
+    printer.println(F("FERTILIZER RECOMMENDATION"));
+    printer.boldOff();
+    printer.setSize('S');
+    printer.println(F("(per ha)"));
 
-      printer.println();
-      printer.justify('C');
-      printer.print("Basal Application: ");
-      const char *basal = "10-20 bags, Organic Fertilizer";
+    printer.println();
+    printer.justify('C');
+    printer.print("Basal Application: ");
+    const char *basal = "10-20 bags, Organic Fertilizer";
 
-      // Print centered text
-      printer.println();
-      printer.justify('C');
-      printCenteredText(printer, basal);
+    // Print centered text
+    printer.println();
+    printer.justify('C');
+    printCenteredText(printer, basal);
 
-      printer.println();
+    printer.println();
 
-      const char *topdressing1 = "1st TopDressing(5-7 DAT):";
-      printCenteredText(printer, topdressing1);
-      printer.println();
-      const char *topdressing2 = "2nd TopDressing(20-24 DAT):";
-      printCenteredText(printer, topdressing2);
-      printer.println();
-      const char *topdressing3 = "3rd TopDressing(30-35 DAT):";
-      printCenteredText(printer, topdressing3);
-      printer.println();
+    const char *topdressing1 = "1st TopDressing(5-7 DAT):";
+    printCenteredText(printer, topdressing1);
+    printer.println();
+    const char *topdressing2 = "2nd TopDressing(20-24 DAT):";
+    printCenteredText(printer, topdressing2);
+    printer.println();
+    const char *topdressing3 = "3rd TopDressing(30-35 DAT):";
+    printCenteredText(printer, topdressing3);
+    printer.println();
 
-      printer.justify('C');
-      printer.setSize('S');
-      printer.print("It is recommended to test your");
-      printer.println();
-      printer.print("soil every planting season for");
-      printer.println();
-      printer.print("efficient farming. Thank You!");
-      printer.println();
-      printer.boldOn();
-      printer.println();
-      printer.println("Produced by: SENSOIL @2024");
-      printer.boldOff();
-      printer.feed(3); 
-      
-      printer.sleep();      // Tell printer to sleep
-      printer.wake();       // MUST wake() before printing again, even if reset
-      printer.setDefault(); // Restore printer to defaults
-    }
-    oldButtonState = buttonState;
+    printer.justify('C');
+    printer.setSize('S');
+    printer.print("It is recommended to test your");
+    printer.println();
+    printer.print("soil every planting season for");
+    printer.println();
+    printer.print("efficient farming. Thank You!");
+    printer.println();
+    printer.boldOn();
+    printer.println();
+    printer.println("Produced by: SENSOIL @2024");
+    printer.boldOff();
+    printer.feed(3); 
+    
+    printer.sleep();      // Tell printer to sleep
+    printer.wake();       // MUST wake() before printing again, even if reset
+    printer.setDefault(); // Restore printer to defaults
   }
-  // DATA LOGGING
-  String currentYear = String(__DATE__).substring(7);
-  // String fileType = "Sensoil_Data_";
-  // Create/Open File
-  String fileName = currentYear + "data.csv";
-  myFile = SD.open(fileName, FILE_WRITE);
-  
-  if (myFile) {
-    Serial.println(F("Writing to the file...."));
-    // write to file
-    myFile.println(__DATE__);
-    // myFile.print(__TIME__);
-    myFile.print(nitro);
-    myFile.print(" ");
-    myFile.print(phos);
-    myFile.print(" ");
-    myFile.print(potas); 
-    myFile.print(" ");   
-    myFile.print(pH); 
-    myFile.print(" ");   
-    myFile.print(ec); 
-    myFile.print(" ");   
-    myFile.print(moisture); 
-    myFile.print(" ");   
-    myFile.print(texture);  
-    myFile.print(" ");  
-    myFile.print(season);    
-    myFile.print(" ");
-    myFile.print(variety);    
-
-    myFile.close();
-    Serial.println(F("Done"));
-  } else {
-    Serial.println("Error opening " + fileName);
-  }
-  // Reading the file
-  myFile = SD.open(fileName);
-  if (myFile) {
-    Serial.println(F("Read:"));
-    while (myFile.available()) {
-      Serial.write(myFile.read());
-    }
-    myFile.close();
-  } else {
-    Serial.println("Error opening " + fileName);
-  }
+  oldButtonState = buttonState;
   if (loopCounter > maxIterations){
     while (true) {
     }
   }
+  //   // DATA LOGGING
+  // String currentYear = String(__DATE__).substring(7);
+  // // String fileType = "Sensoil_Data_";
+  // // Create/Open File
+  // String fileName = currentYear + "data.csv";
+  // myFile = SD.open(fileName, FILE_WRITE);
+  
+  // if (myFile) {
+  //   Serial.println(F("Writing to the file...."));
+  //   // write to file
+  //   myFile.println(__DATE__);
+  //   // myFile.print(__TIME__);
+  //   myFile.print(nitro);
+  //   myFile.print(" ");
+  //   myFile.print(phos);
+  //   myFile.print(" ");
+  //   myFile.print(potas); 
+  //   myFile.print(" ");   
+  //   myFile.print(pH); 
+  //   myFile.print(" ");   
+  //   myFile.print(ec); 
+  //   myFile.print(" ");   
+  //   myFile.print(moisture); 
+  //   myFile.print(" ");   
+  //   myFile.print(texture);  
+  //   myFile.print(" ");  
+  //   myFile.print(season);    
+  //   myFile.print(" ");
+  //   myFile.print(variety);    
+
+  //   myFile.close();
+  //   Serial.println(F("Done"));
+  // } else {
+  //   Serial.println("Error opening " + fileName);
+  // }
+  // // Reading the file
+  // myFile = SD.open(fileName);
+  // if (myFile) {
+  //   Serial.println(F("Read:"));
+  //   while (myFile.available()) {
+  //     Serial.write(myFile.read());
+  //   }
+  //   myFile.close();
+  // } else {
+  //   Serial.println("Error opening " + fileName);
+  // }
 
 }
 void printWithSpace(Adafruit_Thermal &printer, const char *parameter, float value, const char *unit) {
