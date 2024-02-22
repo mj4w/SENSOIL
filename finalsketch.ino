@@ -30,7 +30,7 @@ TO CHECK THE BAUDRATE, KINDLY CHECK THE SAMPLE PRINT TEST IN THERMAL PRINTER
 */
 #define BAUDRATE 9600
 
-SoftwareSerial mySerial1(4,5);
+SoftwareSerial mySerial1(2,3);
 SoftwareSerial mySerial2(18,19); // TX, RX
 Adafruit_Thermal printer(&mySerial2);
 String nit_value,phos_value,potas_value,ph_value,soil_salinity_class,mois_value;
@@ -598,110 +598,110 @@ void loop() {
   button_selector_variety = digitalRead(INBRED_SELECTOR);
   button_selector_texture = digitalRead(LIGHT_SELECTOR);
   
-  if (button_selector_variety == 1) {
-      // light 110
-      if (heavySwitchState == 0 && button_selector_season == 1){
-        season = "WET";
-        texture = "LIGHT";
-        variety = "HYBRID";
-        Serial.print("Light & Wet HYBRID");
-        Serial.println();
-      // medium 111
-      } else if (lightSwitchState == 1 && mediumSwitchState && heavySwitchState && button_selector_season == 1){
-        season = "WET";
-        texture = "MEDIUM";
-        variety = "HYBRID";
-        Serial.print("Medium & Wet HYBRID");
-        Serial.println();       
-      // heavy 011
-      }else if (lightSwitchState == 0 && button_selector_season == 1){
-        season = "WET";
-        texture = "HEAVY";
-        variety = "HYBRID";
-        Serial.print("Heavy & Wet HYBRID");
-        Serial.println();
-      }
-      // Dry Season
-      // light 110
-      if (heavySwitchState == 0 && button_selector_season == 0){
-        season = "DRY";
-        texture = "LIGHT";
-        variety = "HYBRID";
-        Serial.print("Light & Dry HYBRID");
-        Serial.println();
-      // medium 111
-      } else if (lightSwitchState == 1 && mediumSwitchState && heavySwitchState && button_selector_season == 0){
-        season = "DRY";
-        texture = "MEDIUM";
-        variety = "HYBRID";
-        Serial.print("Medium & Dry HYBRID");
-        Serial.println();       
-      // heavy 011
-      } else if (lightSwitchState == 0 && button_selector_season == 0){
-        season = "DRY";
-        texture = "HEAVY";
-        variety = "HYBRID";
-        Serial.print("Heavy & Dry HYBRID");
-        Serial.println();
-      }
+  // if (button_selector_variety == 1) {
+  //     // light 110
+  //     if (heavySwitchState == 0 && button_selector_season == 1){
+  //       season = "WET";
+  //       texture = "LIGHT";
+  //       variety = "HYBRID";
+  //       Serial.print("Light & Wet HYBRID");
+  //       Serial.println();
+  //     // medium 111
+  //     } else if (lightSwitchState == 1 && mediumSwitchState && heavySwitchState && button_selector_season == 1){
+  //       season = "WET";
+  //       texture = "MEDIUM";
+  //       variety = "HYBRID";
+  //       Serial.print("Medium & Wet HYBRID");
+  //       Serial.println();       
+  //     // heavy 011
+  //     }else if (lightSwitchState == 0 && button_selector_season == 1){
+  //       season = "WET";
+  //       texture = "HEAVY";
+  //       variety = "HYBRID";
+  //       Serial.print("Heavy & Wet HYBRID");
+  //       Serial.println();
+  //     }
+  //     // Dry Season
+  //     // light 110
+  //     if (heavySwitchState == 0 && button_selector_season == 0){
+  //       season = "DRY";
+  //       texture = "LIGHT";
+  //       variety = "HYBRID";
+  //       Serial.print("Light & Dry HYBRID");
+  //       Serial.println();
+  //     // medium 111
+  //     } else if (lightSwitchState == 1 && mediumSwitchState && heavySwitchState && button_selector_season == 0){
+  //       season = "DRY";
+  //       texture = "MEDIUM";
+  //       variety = "HYBRID";
+  //       Serial.print("Medium & Dry HYBRID");
+  //       Serial.println();       
+  //     // heavy 011
+  //     } else if (lightSwitchState == 0 && button_selector_season == 0){
+  //       season = "DRY";
+  //       texture = "HEAVY";
+  //       variety = "HYBRID";
+  //       Serial.print("Heavy & Dry HYBRID");
+  //       Serial.println();
+  //     }
 
     
-  } else {
-      // if (button_selector_season == 1){
-      //   Serial.print("WET INBRED");
-      //   Serial.println();
-      // }else if (button_selector_season == 0){
-      //   Serial.print("DRY INBRED");
-      //   Serial.println();
-      // }
-      // light 110
-      if (heavySwitchState == 0 && button_selector_season == 1){
-        season = "WET";
-        texture = "LIGHT";
-        variety = "INBRED";
-        Serial.print("Light & Wet INBRED");
-        Serial.println();
-      // medium 111
-      } else if (lightSwitchState == 1 && mediumSwitchState && heavySwitchState && button_selector_season == 1){
-        season = "WET";
-        texture = "MEDIUM";
-        variety = "INBRED";
-        Serial.print("Medium & Wet INBRED");
-        Serial.println();       
-      // heavy 011
-      } else if (lightSwitchState == 0 && button_selector_season == 1){
-        season = "WET";
-        texture = "HEAVY";
-        variety = "INBRED";
-        Serial.print("Heavy & Wet INBRED");
-        Serial.println();
-      }
-      // Dry Season
-      // light 110
-      if (heavySwitchState == 0 && button_selector_season == 0){
-        season = "DRY";
-        texture = "LIGHT";
-        variety = "INBRED";
-        Serial.print("Light & Dry INBRED");
-        Serial.println();
-      // medium 111
-      } else if (lightSwitchState == 1 && mediumSwitchState && heavySwitchState && button_selector_season == 0){
-        season = "DRY";
-        texture = "MEDIUM";
-        variety = "INBRED";
-        Serial.print("Medium & Dry INBRED");
-        Serial.println();       
-      // heavy 011
-      } else if (lightSwitchState == 0 && button_selector_season == 0){
-        season = "DRY";
-        texture = "HEAVY";
-        variety = "INBRED";
-        Serial.print("Heavy & Dry INBRED");
-        Serial.println();
-      }
+  // } else {
+  //     // if (button_selector_season == 1){
+  //     //   Serial.print("WET INBRED");
+  //     //   Serial.println();
+  //     // }else if (button_selector_season == 0){
+  //     //   Serial.print("DRY INBRED");
+  //     //   Serial.println();
+  //     // }
+  //     // light 110
+  //     if (heavySwitchState == 0 && button_selector_season == 1){
+  //       season = "WET";
+  //       texture = "LIGHT";
+  //       variety = "INBRED";
+  //       Serial.print("Light & Wet INBRED");
+  //       Serial.println();
+  //     // medium 111
+  //     } else if (lightSwitchState == 1 && mediumSwitchState && heavySwitchState && button_selector_season == 1){
+  //       season = "WET";
+  //       texture = "MEDIUM";
+  //       variety = "INBRED";
+  //       Serial.print("Medium & Wet INBRED");
+  //       Serial.println();       
+  //     // heavy 011
+  //     } else if (lightSwitchState == 0 && button_selector_season == 1){
+  //       season = "WET";
+  //       texture = "HEAVY";
+  //       variety = "INBRED";
+  //       Serial.print("Heavy & Wet INBRED");
+  //       Serial.println();
+  //     }
+  //     // Dry Season
+  //     // light 110
+  //     if (heavySwitchState == 0 && button_selector_season == 0){
+  //       season = "DRY";
+  //       texture = "LIGHT";
+  //       variety = "INBRED";
+  //       Serial.print("Light & Dry INBRED");
+  //       Serial.println();
+  //     // medium 111
+  //     } else if (lightSwitchState == 1 && mediumSwitchState && heavySwitchState && button_selector_season == 0){
+  //       season = "DRY";
+  //       texture = "MEDIUM";
+  //       variety = "INBRED";
+  //       Serial.print("Medium & Dry INBRED");
+  //       Serial.println();       
+  //     // heavy 011
+  //     } else if (lightSwitchState == 0 && button_selector_season == 0){
+  //       season = "DRY";
+  //       texture = "HEAVY";
+  //       variety = "INBRED";
+  //       Serial.print("Heavy & Dry INBRED");
+  //       Serial.println();
+  //     }
 
 
-  }
+  // }
   if (mySerial1.available() >= sizeof(receivedData)) {  // Check if there are enough bytes available to read
     mySerial1.readBytes(receivedData, sizeof(receivedData));  // Read the received data into the receivedData array
     // Parse and print the received data in decimal format
