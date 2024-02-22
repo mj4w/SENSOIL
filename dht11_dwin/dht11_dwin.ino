@@ -1,7 +1,7 @@
 #include <SoftwareSerial.h>
 
-SoftwareSerial dwinSerial(7,8);
-SoftwareSerial mod(4,5);  // RX, TX
+SoftwareSerial dwinSerial(16,17);
+SoftwareSerial mod(10,11);  // RX, TX
 
 unsigned char Buffer[9];
 #define nitro_value 0x51
@@ -41,7 +41,6 @@ void loop() {
   byte receivedData[19];
   mod.write(queryData, sizeof(queryData));  // Send the query data to the NPK sensor
   delay(1000);  // Wait for 1 second
-
   if (mod.available() >= sizeof(receivedData)) {  // Check if there are enough bytes available to read
     mod.readBytes(receivedData, sizeof(receivedData));  // Read the received data into the receivedData array
 
@@ -61,18 +60,19 @@ void loop() {
     nitroValue = (nitrogen / 1000.0 * 10.0);
     phosValue = (phosphorus);
     potas = (potassium / 1000.0 / 39.0983 * 100.0);
-    // Serial.print("Nitrogen");
-    // Serial.println(nitroValue);
-    // Serial.print("Phosphorus:");
-    // Serial.println(phosValue);
-    // Serial.print("Potassium");
-    // Serial.println(potas);
-    // Serial.print("EC");
-    // Serial.println(ec);
-    // Serial.print("PH");
-    // Serial.println(pH);
-    // Serial.print("Moisture");
-    // Serial.println(moisture);
+
+    Serial.print("Nitrogen");
+    Serial.println(nitroValue);
+    Serial.print("Phosphorus:");
+    Serial.println(phosValue);
+    Serial.print("Potassium");
+    Serial.println(potas);
+    Serial.print("EC");
+    Serial.println(ec);
+    Serial.print("PH");
+    Serial.println(pH);
+    Serial.print("Moisture");
+    Serial.println(moisture);
 
     delay(5000);
   }
@@ -96,11 +96,15 @@ void Data_Arduino_to_Display() {
   int ph = static_cast<int>(pH * 100);
   int e = static_cast<int>(ec * 100);
   int m = static_cast<int>(moisture * 100);
-
   // Convert season, texture, and variety values to string
-  String seasonStr = String(season);
-  String textureStr = String(texture);
-  String varietyStr = String(variety);
+  char seasonStr[10];
+  season.toCharArray(seasonStr, 10);
+
+  char textureStr[10];
+  texture.toCharArray(textureStr, 10);
+
+  char varietyStr[10];
+  variety.toCharArray(varietyStr, 10);
 
   Serial.print("Nitrogen: ");
   Serial.println(n);
@@ -149,23 +153,14 @@ void Data_Arduino_to_Display() {
   Moist[7] = lowByte(m);
   dwinSerial.write(Moist, 8);
 
-  // Send season string
-  for (int i = 0; i < seasonStr.length(); i++) {
-    Season[i + 4] = seasonStr.charAt(i);
-  }
-  dwinSerial.write(Season, 8);
+  dwinSerial.print("Season:");
+  dwinSerial.println(seasonStr);
 
-  // Send texture string
-  for (int i = 0; i < textureStr.length(); i++) {
-    Texture[i + 4] = textureStr.charAt(i);
-  }
-  dwinSerial.write(Texture, 8);
+  dwinSerial.print("Texture:");
+  dwinSerial.println(textureStr);
 
-  // Send variety string
-  for (int i = 0; i < varietyStr.length(); i++) {
-    Variety[i + 4] = varietyStr.charAt(i);
-  }
-  dwinSerial.write(Variety, 8);
+  dwinSerial.print("Variety:");
+  dwinSerial.println(varietyStr);
 }
 
 
