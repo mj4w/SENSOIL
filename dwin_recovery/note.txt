@@ -1,0 +1,11 @@
+Note :
+
+file name inside DWIN_SET folder for BIN files must be
+
+
+T5UIC1V10.BIN
+
+
+While SD card is inserted into PGT05, it is enough to plug in the USB power cable.No need to press the START swwitch.Green LEDs will glow first and then after file transfer RED led will glow.
+
+While PGT05 is plugged on to 7 pin holes of DWIN , provide power to DWIN display and long press START switch , wait for RED led.
