@@ -1,7 +1,7 @@
 #include <SoftwareSerial.h>
 
-SoftwareSerial dwinSerial(16,17);
-SoftwareSerial mod(10,11);  // RX, TX
+SoftwareSerial dwinSerial(19,18);
+SoftwareSerial mod(10,11); 
 
 unsigned char Buffer[9];
 #define nitro_value 0x51
@@ -11,11 +11,6 @@ unsigned char Buffer[9];
 #define ec_value 0x55
 #define moist_value 0x56
 
-#define season_value 0x57
-#define texture_value 0x58
-#define variety_value 0x59
-
-
 unsigned char Nitro[8] = {0x5A, 0xA5, 0x05, 0x82, nitro_value, 0x00, 0x00, 0x00};
 unsigned char Phos[8] = {0x5A, 0xA5, 0x05, 0x82, phos_value, 0x00, 0x00, 0x00};
 unsigned char Potas[8] = {0x5A, 0xA5, 0x05, 0x82, potas_value, 0x00, 0x00, 0x00};
@@ -23,20 +18,17 @@ unsigned char PH[8] = {0x5A, 0xA5, 0x05, 0x82, pH_value, 0x00, 0x00, 0x00};
 unsigned char EC[8] = {0x5A, 0xA5, 0x05, 0x82, ec_value, 0x00, 0x00, 0x00};
 unsigned char Moist[8] = {0x5A, 0xA5, 0x05, 0x82, moist_value, 0x00, 0x00, 0x00};
 
-unsigned char Season[8] = {0x5A, 0xA5, 0x05, 0x82, season_value, 0x00, 0x00, 0x00};
-unsigned char Texture[8] = {0x5A, 0xA5, 0x05, 0x82, texture_value, 0x00, 0x00, 0x00};
-unsigned char Variety[8] = {0x5A, 0xA5, 0x05, 0x82, variety_value, 0x00, 0x00, 0x00};
 
 float moisture, ec, pH, nitroValue, phosValue, potas;
 String season,texture,variety;
 void setup() {
   Serial.begin(9600);
-  dwinSerial.begin(115200);
+  dwinSerial.begin(9600);
   mod.begin(4800);
 }
 
 void loop() {
-
+  Serial.print(dwinSerial.available());
   byte queryData[] = {0x01, 0x03, 0x00, 0x00, 0x00, 0x07, 0x04, 0x08};
   byte receivedData[19];
   mod.write(queryData, sizeof(queryData));  // Send the query data to the NPK sensor
@@ -79,16 +71,16 @@ void loop() {
   while (dwinSerial.available()) {
     dwin();
   }
-  season = "WET";
-  texture = "LIGHT";
-  variety = "HYBRID";
+
 
 
   Data_Arduino_to_Display();
 }
 void Data_Arduino_to_Display() {
   delay(100);
-
+  season = "WET";
+  texture = "LIGHT";
+  variety = "HYBRID";
   // Update nitroValue and phosValue with actual sensor readings
   int n = static_cast<int>(nitroValue * 100);  
   int ps = static_cast<int>(phosValue * 100);  
@@ -96,15 +88,7 @@ void Data_Arduino_to_Display() {
   int ph = static_cast<int>(pH * 100);
   int e = static_cast<int>(ec * 100);
   int m = static_cast<int>(moisture * 100);
-  // Convert season, texture, and variety values to string
-  char seasonStr[10];
-  season.toCharArray(seasonStr, 10);
 
-  char textureStr[10];
-  texture.toCharArray(textureStr, 10);
-
-  char varietyStr[10];
-  variety.toCharArray(varietyStr, 10);
 
   Serial.print("Nitrogen: ");
   Serial.println(n);
@@ -119,16 +103,10 @@ void Data_Arduino_to_Display() {
   Serial.print("Moisture: ");
   Serial.println(m);
 
-  Serial.print("Season String: ");
-  Serial.println(seasonStr);
 
-  Serial.print("Texture String: ");
-  Serial.println(textureStr);
-
-  Serial.print("Variety String: ");
-  Serial.println(varietyStr);
 
   /*------Send Data to Display------*/
+
   Nitro[6] = highByte(n);
   Nitro[7] = lowByte(n);
   dwinSerial.write(Nitro, 8);
@@ -153,19 +131,11 @@ void Data_Arduino_to_Display() {
   Moist[7] = lowByte(m);
   dwinSerial.write(Moist, 8);
 
-  dwinSerial.print("Season:");
-  dwinSerial.println(seasonStr);
 
-  dwinSerial.print("Texture:");
-  dwinSerial.println(textureStr);
 
-  dwinSerial.print("Variety:");
-  dwinSerial.println(varietyStr);
 }
 
-
 void dwin() {
-  Serial.print(dwinSerial.available());
   if (dwinSerial.available()) {
     for (int i = 0; i <= 8; i++) //5A A5 06 83 55 00 01 00 01 frame sample received
     {

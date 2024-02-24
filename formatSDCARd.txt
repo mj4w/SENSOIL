@@ -1,1 +1,1 @@
-: format/q g:/fs:fat32/a:4096
+format/q e:/fs:fat32/a:4096
