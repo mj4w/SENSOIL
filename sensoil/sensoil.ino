@@ -585,9 +585,9 @@ void printWithInt(Adafruit_Thermal &printer, const char *parameter, int value) {
 
 // NUTRIENT 
 void nutrient_reco(float nit_both_val, float phos_both_val, float potas_both_val){
-  int nb = static_cast<int>(nit_both * 100);  
-  int pb = static_cast<int>(phos_both * 100);  
-  int pob = static_cast<int>(potas_both * 100);
+  int nb = static_cast<int>(nit_both);  
+  int pb = static_cast<int>(phos_both);  
+  int pob = static_cast<int>(potas_both);
 
   /*------Send Data to Display------*/
   Nit_Both_Dwin[6] = highByte(nb);
@@ -880,7 +880,6 @@ void hybrid_nitrogen_mds(float nitro){
   if (nitro <= 2.0) {
     nit_both = 110;
     nit_value = "LOW";
-
   }
   else if (nitro >= 2.1 && nitro <= 3.5) {
     nit_both = 90;
