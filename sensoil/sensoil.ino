@@ -168,7 +168,7 @@ void loop() {
         nutrient_reco(nit_both,phos_both,potas_both);
 
         dwinSerial.write(Season_Dwin,9);
-        dwinSerial.write(Texture_Dwin,11);
+        dwinSerial.write(Texture_Dwin,12);
         dwinSerial.write(Variety_Dwin,12);
         delay(100);
       // medium 111
@@ -258,7 +258,7 @@ void loop() {
 
         dwinSerial.write(Season_Dwin,9);
         dwinSerial.write(Texture_Dwin,12);
-        dwinSerial.write(Variety_Dwin,12);   
+        dwinSerial.write(Variety_Dwin,12);  
         delay(100);
 
       // heavy 011
@@ -603,97 +603,6 @@ void nutrient_reco(float nit_both_val, float phos_both_val, float potas_both_val
   dwinSerial.write(Potas_Both_Dwin, 8);
 }
 
-
-// light nitro -> WET SEASON
-void hybrid_nitrogen_lws(float nitro){
-
-  if (nitro <= 2.0) {
-    nit_both = 100;
-    nit_value = "LOW";
-
-  }
-  else if (nitro >= 2.1 && nitro <= 3.5) {
-    nit_both = 80;
-    nit_value = "MODERATELY LOW";
-
-  }
-  else if (nitro >= 3.6 && nitro <= 4.5) {
-    nit_both = 60;
-    nit_value = "MODERATELY HIGH";
-  }
-  else if (nitro >= 4.6){
-    nit_both = 7;
-    nit_value = "HIGH";
-  }
-  Serial.println();
-  Serial.print("Nitrogen: ");
-  Serial.print(nitro);
-  Serial.print("%");
-  Serial.println();
-  Serial.print("Nitrogen Value: ");
-  Serial.print(nit_value);
-  Serial.println();
-}
-// medium nitro -> WET SEASON
-void hybrid_nitrogen_mws(float nitro){
-
-  if (nitro <= 2.0) {
-    nit_both = 90;
-    nit_value = "LOW";
-
-  }
-  else if (nitro >= 2.1 && nitro <= 3.5) {
-    nit_both = 70;
-    nit_value = "MODERATELY LOW";
-
-  }
-  else if (nitro >= 3.6 && nitro <= 4.5) {
-    nit_both = 50;
-    nit_value = "MODERATELY HIGH";
-  }
-  else if (nitro >= 4.6){
-    nit_both = 7;
-    nit_value = "HIGH";
-  }
-  Serial.println();
-  Serial.print("Nitrogen: ");
-  Serial.print(nitro);
-  Serial.print("%");
-  Serial.println();
-  Serial.print("Nitrogen Value: ");
-  Serial.print(nit_value);
-  Serial.println();
-}
-// heavy nitro -> WET SEASON
-void hybrid_nitrogen_hws(float nitro){
-
-  if (nitro <= 2.0) {
-    nit_both = 80;
-    nit_value = "LOW";
-
-  }
-  else if (nitro >= 2.1 && nitro <= 3.5) {
-    nit_both = 60;
-    nit_value = "MODERATELY LOW";
-
-  }
-  else if (nitro >= 3.6 && nitro <= 4.5) {
-    nit_both = 40;
-    nit_value = "MODERATELY HIGH";
-  }
-  else if (nitro >= 4.6){
-    nit_both = 7;
-    nit_value = "HIGH";
-  }
-  Serial.println();
-  Serial.print("Nitrogen: ");
-  Serial.print(nitro);
-  Serial.print("%");
-  Serial.println();
-  Serial.print("Nitrogen Value: ");
-  Serial.print(nit_value);
-  Serial.println();
-}
 void phosphorus_(float pH, float phos){
 
     // ABOVE 5.5
@@ -734,7 +643,7 @@ void phosphorus_(float pH, float phos){
       phos_value = "MODERATELY HIGH";
     }
     else if (phos >= 10.1 && phos <= 75){
-      phos_both=7;
+      phos_both= 7;
       phos_value = "HIGH";
     }
     else if (phos > 75) {
@@ -750,6 +659,52 @@ void phosphorus_(float pH, float phos){
   Serial.print("Phosphorus Value: ");
   Serial.print(phos_value);
   Serial.println();
+  if(pH > 5.5) {
+    if (phos >= 0 && phos <= 6){
+      unsigned char Phosphorus_Label[] = {0x5A,0xA5,0x10,0x82,0x21,0x00,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
+      dwinSerial.write(Phosphorus_Label,17);
+    }
+    else if (phos >= 6.1 && phos <= 10){
+      unsigned char Phosphorus_Label[] = {0x5A,0xA5,0x10,0x82,0x21,0x00,0x4D,0x4F,0x44,0x2D,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D};
+      dwinSerial.write(Phosphorus_Label,17);
+    }
+    else if (phos >= 10.1 && phos <= 15){
+      unsigned char Phosphorus_Label[] = {0x5A,0xA5,0x10,0x82,0x21,0x00,0x4D,0x4F,0x44,0x2D,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D};
+      dwinSerial.write(Phosphorus_Label,17); 
+    }
+    else if (phos >= 15.1 && phos <= 100){
+      unsigned char Phosphorus_Label[] = {0x5A,0xA5,0x10,0x82,0x21,0x00,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
+      dwinSerial.write(Phosphorus_Label,17); 
+    }
+    else if (phos > 100){
+      unsigned char Phosphorus_Label[] = {0x5A,0xA5,0x10,0x82,0x21,0x00,0x56,0x45,0x52,0x59,0x2D,0x48,0x49,0x47,0x48,0x2D,0x2D};
+      dwinSerial.write(Phosphorus_Label,17);
+    }
+  }
+  if (pH <= 5.5) {
+    if (phos >= 0 && phos <= 2) {
+      unsigned char Phosphorus_Label[] = {0x5A,0xA5,0x10,0x82,0x21,0x00,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
+      dwinSerial.write(Phosphorus_Label,17);
+    }
+    if (phos >= 2.1 && phos <= 6){
+      unsigned char Phosphorus_Label[] = {0x5A,0xA5,0x10,0x82,0x21,0x00,0x4D,0x4F,0x44,0x2D,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D};
+      dwinSerial.write(Phosphorus_Label,17);
+    }
+    if (phos >= 6.1 && phos <= 10){
+      unsigned char Phosphorus_Label[] = {0x5A,0xA5,0x10,0x82,0x21,0x00,0x4D,0x4F,0x44,0x2D,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D};
+      dwinSerial.write(Phosphorus_Label,17); 
+    }
+    if (phos >= 10.1 && phos <= 75){
+      unsigned char Phosphorus_Label[] = {0x5A,0xA5,0x10,0x82,0x21,0x00,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
+      dwinSerial.write(Phosphorus_Label,17); 
+    }
+    else if (phos > 75) {
+      unsigned char Phosphorus_Label[] = {0x5A,0xA5,0x10,0x82,0x21,0x00,0x56,0x45,0x52,0x59,0x2D,0x48,0x49,0x47,0x48,0x2D,0x2D};
+      dwinSerial.write(Phosphorus_Label,17); 
+    }
+  }
+
+
 }
 void potassium_(float potas){
     // potassium
@@ -779,7 +734,28 @@ void potassium_(float potas){
   Serial.println();
   Serial.print("Potassium Value: ");
   Serial.print(potas_value);
-  Serial.println();
+  Serial.println();=
+
+  if (potas >= 0 && potas <= 0.190){
+    unsigned char Potassium_Label[] = {0x5A,0xA5,0x10,0x82,0x23,0x00,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
+    dwinSerial.write(Potassium_Label,17);
+  }
+  else if (potas >= 0.191 && potas <= 0.290){
+    unsigned char Potassium_Label[] = {0x5A,0xA5,0x10,0x82,0x23,0x00,0x4D,0x4F,0x44,0x2D,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D};
+    dwinSerial.write(Potassium_Label,17);
+  }
+  else if (potas >= 0.291 && potas <= 0.385){
+    unsigned char Potassium_Label[] = {0x5A,0xA5,0x10,0x82,0x23,0x00,0x4D,0x4F,0x44,0x2D,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D};
+    dwinSerial.write(Potassium_Label,17); 
+  }
+  else if (potas >= 0.386 && potas <= 1.000){
+    unsigned char Potassium_Label[] = {0x5A,0xA5,0x10,0x82,0x23,0x00,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
+    dwinSerial.write(Potassium_Label,17); 
+  }
+  else if (potas >= 1.000){
+    unsigned char Potassium_Label[] = {0x5A,0xA5,0x10,0x82,0x23,0x00,0x56,0x45,0x52,0x59,0x2D,0x48,0x49,0x47,0x48,0x2D,0x2D};
+    dwinSerial.write(Potassium_Label,17); 
+  }
 }
 void soil_ph(float pH){
 
@@ -844,24 +820,34 @@ void moisture_(float moisture){
   Serial.print(mois_value);
   Serial.println();
 }
-// DRY SEASON
-void hybrid_nitrogen_lds(float nitro){
+
+
+// light nitro -> WET SEASON
+void hybrid_nitrogen_lws(float nitro){
 
   if (nitro <= 2.0) {
-    nit_both = 120;
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
+    dwinSerial.write(Nitrogen_Label_Dwin,17); 
+    nit_both = 100;
     nit_value = "LOW";
 
   }
   else if (nitro >= 2.1 && nitro <= 3.5) {
-    nit_both = 100;
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4D,0x4F,0x44,0x2D,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D};
+    dwinSerial.write(Nitrogen_Label_Dwin,17); 
+    nit_both = 80;
     nit_value = "MODERATELY LOW";
 
   }
   else if (nitro >= 3.6 && nitro <= 4.5) {
-    nit_both = 80;
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4D,0x4F,0x44,0x2D,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D};
+    dwinSerial.write(Nitrogen_Label_Dwin,17); 
+    nit_both = 60;
     nit_value = "MODERATELY HIGH";
   }
   else if (nitro >= 4.6){
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
+    dwinSerial.write(Nitrogen_Label_Dwin,17); 
     nit_both = 7;
     nit_value = "HIGH";
   }
@@ -874,23 +860,146 @@ void hybrid_nitrogen_lds(float nitro){
   Serial.print(nit_value);
   Serial.println();
 }
+// medium nitro -> WET SEASON
+void hybrid_nitrogen_mws(float nitro){
+
+  if (nitro <= 2.0) {
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
+    dwinSerial.write(Nitrogen_Label_Dwin,17); 
+    nit_both = 90;
+    nit_value = "LOW";
+
+  }
+  else if (nitro >= 2.1 && nitro <= 3.5) {
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4D,0x4F,0x44,0x2D,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D};
+    dwinSerial.write(Nitrogen_Label_Dwin,17); 
+    nit_both = 70;
+    nit_value = "MODERATELY LOW";
+
+  }
+  else if (nitro >= 3.6 && nitro <= 4.5) {
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4D,0x4F,0x44,0x2D,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D};
+    dwinSerial.write(Nitrogen_Label_Dwin,17); 
+    nit_both = 50;
+    nit_value = "MODERATELY HIGH";
+  }
+  else if (nitro >= 4.6){
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
+    dwinSerial.write(Nitrogen_Label_Dwin,17); 
+    nit_both = 7;
+    nit_value = "HIGH";
+  }
+  Serial.println();
+  Serial.print("Nitrogen: ");
+  Serial.print(nitro);
+  Serial.print("%");
+  Serial.println();
+  Serial.print("Nitrogen Value: ");
+  Serial.print(nit_value);
+  Serial.println();
+}
+// heavy nitro -> WET SEASON
+void hybrid_nitrogen_hws(float nitro){
+
+  if (nitro <= 2.0) {
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
+    dwinSerial.write(Nitrogen_Label_Dwin,17); 
+    nit_both = 80;
+    nit_value = "LOW";
+
+  }
+  else if (nitro >= 2.1 && nitro <= 3.5) {
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4D,0x4F,0x44,0x2D,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D};
+    dwinSerial.write(Nitrogen_Label_Dwin,17); 
+    nit_both = 60;
+    nit_value = "MODERATELY LOW";
+
+  }
+  else if (nitro >= 3.6 && nitro <= 4.5) {
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4D,0x4F,0x44,0x2D,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D};
+    dwinSerial.write(Nitrogen_Label_Dwin,17); 
+    nit_both = 40;
+    nit_value = "MODERATELY HIGH";
+  }
+  else if (nitro >= 4.6){
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
+    dwinSerial.write(Nitrogen_Label_Dwin,17); 
+    nit_both = 7;
+    nit_value = "HIGH";
+  }
+  Serial.println();
+  Serial.print("Nitrogen: ");
+  Serial.print(nitro);
+  Serial.print("%");
+  Serial.println();
+  Serial.print("Nitrogen Value: ");
+  Serial.print(nit_value);
+  Serial.println();
+}
+// DRY SEASON
+void hybrid_nitrogen_lds(float nitro){
+
+  if (nitro <= 2.0) {
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
+    dwinSerial.write(Nitrogen_Label_Dwin,17); 
+    nit_both = 120;
+    nit_value = "LOW";
+
+  }
+  else if (nitro >= 2.1 && nitro <= 3.5) {
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4D,0x4F,0x44,0x2D,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D};
+    dwinSerial.write(Nitrogen_Label_Dwin,17); 
+    nit_both = 100;
+    nit_value = "MODERATELY LOW";
+
+  }
+  else if (nitro >= 3.6 && nitro <= 4.5) {
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4D,0x4F,0x44,0x2D,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D};
+    dwinSerial.write(Nitrogen_Label_Dwin,17); 
+    nit_both = 80;
+    nit_value = "MODERATELY HIGH";
+  }
+  else if (nitro >= 4.6){
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
+    dwinSerial.write(Nitrogen_Label_Dwin,17); 
+    nit_both = 7;
+    nit_value = "HIGH";
+  }
+  Serial.println();
+  Serial.print("Nitrogen: ");
+  Serial.print(nitro);
+  Serial.print("%");
+  Serial.println();
+  Serial.print("Nitrogen Value: ");
+  Serial.print(nit_value);
+  Serial.println();
+}
+
 // medium nitro -> DRY SEASON
 void hybrid_nitrogen_mds(float nitro){
 
   if (nitro <= 2.0) {
     nit_both = 110;
     nit_value = "LOW";
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
+    dwinSerial.write(Nitrogen_Label_Dwin,17);  
   }
   else if (nitro >= 2.1 && nitro <= 3.5) {
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4D,0x4F,0x44,0x2D,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D};
+    dwinSerial.write(Nitrogen_Label_Dwin,17); 
     nit_both = 90;
     nit_value = "MODERATELY LOW";
 
   }
   else if (nitro >= 3.6 && nitro <= 4.5) {
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4D,0x4F,0x44,0x2D,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D};
+    dwinSerial.write(Nitrogen_Label_Dwin,17); 
     nit_both = 70;
     nit_value = "MODERATELY HIGH";
   }
   else if (nitro >= 4.6){
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
+    dwinSerial.write(Nitrogen_Label_Dwin,17); 
     nit_both = 7;
     nit_value = "HIGH";
   }
@@ -907,20 +1016,28 @@ void hybrid_nitrogen_mds(float nitro){
 void hybrid_nitrogen_hds(float nitro){
 
   if (nitro <= 2.0) {
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
+    dwinSerial.write(Nitrogen_Label_Dwin,17); 
     nit_both = 100;
     nit_value = "LOW";
 
   }
   else if (nitro >= 2.1 && nitro <= 3.5) {
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4D,0x4F,0x44,0x2D,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D};
+    dwinSerial.write(Nitrogen_Label_Dwin,17); 
     nit_both = 80;
     nit_value = "MODERATELY LOW";
 
   }
   else if (nitro >= 3.6 && nitro <= 4.5) {
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4D,0x4F,0x44,0x2D,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D};
+    dwinSerial.write(Nitrogen_Label_Dwin,17); 
     nit_both = 60;
     nit_value = "MODERATELY HIGH";
   }
   else if (nitro >= 4.6){
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
+    dwinSerial.write(Nitrogen_Label_Dwin,17); 
     nit_both = 7;
     nit_value = "HIGH";
   }
@@ -939,20 +1056,28 @@ void hybrid_nitrogen_hds(float nitro){
 void inbred_nitrogen_lws(float nitro){
 
   if (nitro <= 2.0) {
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
+    dwinSerial.write(Nitrogen_Label_Dwin,17); 
     nit_both = 80;
     nit_value = "LOW";
 
   }
   else if (nitro >= 2.1 && nitro <= 3.5) {
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4D,0x4F,0x44,0x2D,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D};
+    dwinSerial.write(Nitrogen_Label_Dwin,17); 
     nit_both = 60;
     nit_value = "MODERATELY LOW";
 
   }
   else if (nitro >= 3.6 && nitro <= 4.5) {
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4D,0x4F,0x44,0x2D,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D};
+    dwinSerial.write(Nitrogen_Label_Dwin,17); 
     nit_both = 40;
     nit_value = "MODERATELY HIGH";
   }
   else if (nitro >= 4.6){
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
+    dwinSerial.write(Nitrogen_Label_Dwin,17); 
     nit_both = 7;
     nit_value = "HIGH";
   }
@@ -969,20 +1094,28 @@ void inbred_nitrogen_lws(float nitro){
 void inbred_nitrogen_mws(float nitro){
 
   if (nitro <= 2.0) {
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
+    dwinSerial.write(Nitrogen_Label_Dwin,17); 
     nit_both = 70;
     nit_value = "LOW";
 
   }
   else if (nitro >= 2.1 && nitro <= 3.5) {
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4D,0x4F,0x44,0x2D,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D};
+    dwinSerial.write(Nitrogen_Label_Dwin,17); 
     nit_both = 50;
     nit_value = "MODERATELY LOW";
 
   }
   else if (nitro >= 3.6 && nitro <= 4.5) {
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4D,0x4F,0x44,0x2D,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D};
+    dwinSerial.write(Nitrogen_Label_Dwin,17); 
     nit_both = 30;
     nit_value = "MODERATELY HIGH";
   }
   else if (nitro >= 4.6){
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
+    dwinSerial.write(Nitrogen_Label_Dwin,17); 
     nit_both = 7;
     nit_value = "HIGH";
   }
@@ -999,20 +1132,28 @@ void inbred_nitrogen_mws(float nitro){
 void inbred_nitrogen_hws(float nitro){
 
   if (nitro <= 2.0) {
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
+    dwinSerial.write(Nitrogen_Label_Dwin,17); 
     nit_both = 60;
     nit_value = "LOW";
 
   }
   else if (nitro >= 2.1 && nitro <= 3.5) {
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4D,0x4F,0x44,0x2D,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D};
+    dwinSerial.write(Nitrogen_Label_Dwin,17); 
     nit_both = 40;
     nit_value = "MODERATELY LOW";
 
   }
   else if (nitro >= 3.6 && nitro <= 4.5) {
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4D,0x4F,0x44,0x2D,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D};
+    dwinSerial.write(Nitrogen_Label_Dwin,17); 
     nit_both = 20;
     nit_value = "MODERATELY HIGH";
   }
   else if (nitro >= 4.6){
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
+    dwinSerial.write(Nitrogen_Label_Dwin,17); 
     nit_both = 7;
     nit_value = "HIGH";
   }
@@ -1031,20 +1172,28 @@ void inbred_nitrogen_hws(float nitro){
 void inbred_nitrogen_lds(float nitro){
 
   if (nitro <= 2.0) {
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
+    dwinSerial.write(Nitrogen_Label_Dwin,17); 
     nit_both = 90;
     nit_value = "LOW";
 
   }
   else if (nitro >= 2.1 && nitro <= 3.5) {
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4D,0x4F,0x44,0x2D,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D};
+    dwinSerial.write(Nitrogen_Label_Dwin,17); 
     nit_both = 70;
     nit_value = "MODERATELY LOW";
 
   }
   else if (nitro >= 3.6 && nitro <= 4.5) {
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4D,0x4F,0x44,0x2D,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D};
+    dwinSerial.write(Nitrogen_Label_Dwin,17); 
     nit_both = 50;
     nit_value = "MODERATELY HIGH";
   }
   else if (nitro >= 4.6){
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
+    dwinSerial.write(Nitrogen_Label_Dwin,17); 
     nit_both = 7;
     nit_value = "HIGH";
   }
@@ -1061,20 +1210,28 @@ void inbred_nitrogen_lds(float nitro){
 void inbred_nitrogen_mds(float nitro){
 
   if (nitro <= 2.0) {
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
+    dwinSerial.write(Nitrogen_Label_Dwin,17); 
     nit_both = 80;
     nit_value = "LOW";
 
   }
   else if (nitro >= 2.1 && nitro <= 3.5) {
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4D,0x4F,0x44,0x2D,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D};
+    dwinSerial.write(Nitrogen_Label_Dwin,17); 
     nit_both = 60;
     nit_value = "MODERATELY LOW";
 
   }
   else if (nitro >= 3.6 && nitro <= 4.5) {
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4D,0x4F,0x44,0x2D,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D};
+    dwinSerial.write(Nitrogen_Label_Dwin,17); 
     nit_both = 40;
     nit_value = "MODERATELY HIGH";
   }
   else if (nitro >= 4.6){
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
+    dwinSerial.write(Nitrogen_Label_Dwin,17); 
     nit_both = 7;
     nit_value = "HIGH";
   }
@@ -1091,20 +1248,28 @@ void inbred_nitrogen_mds(float nitro){
 void inbred_nitrogen_hds(float nitro){
 
   if (nitro <= 2.0) {
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
+    dwinSerial.write(Nitrogen_Label_Dwin,17); 
     nit_both = 70;
     nit_value = "LOW";
 
   }
   else if (nitro >= 2.1 && nitro <= 3.5) {
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4D,0x4F,0x44,0x2D,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D};
+    dwinSerial.write(Nitrogen_Label_Dwin,17); 
     nit_both = 50;
     nit_value = "MODERATELY LOW";
 
   }
   else if (nitro >= 3.6 && nitro <= 4.5) {
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4D,0x4F,0x44,0x2D,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D};
+    dwinSerial.write(Nitrogen_Label_Dwin,17); 
     nit_both = 30;
     nit_value = "MODERATELY HIGH";
   }
   else if (nitro >= 4.6){
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
+    dwinSerial.write(Nitrogen_Label_Dwin,17); 
     nit_both = 7;
     nit_value = "HIGH";
   }
