@@ -1,7 +1,7 @@
 #include <SPI.h>
 #include <SD.h>
 
-const int chipSelect = 10; // Change this to the CS pin of your SD card module
+const int chipSelect = 53; // Change this to the CS pin of your SD card module
 const int maxFiles = 10; // Maximum number of files, adjust as needed
 
 String fileNames[maxFiles]; // Array to store file names
@@ -42,23 +42,23 @@ void setup() {
 
   Serial.println("SD card initialized successfully.");
   // logData(); // Commented out logData to avoid writing unnecessary data during testing
-  // List all files on the SD card
+  // // List all files on the SD card
   listFiles();
   String var1 = fileNames[0];
   String var2 = fileNames[1];
   String var3 = fileNames[2];
   // Access individual file names using the array
-  if (maxFiles > 0) {
-    Serial.println("var1: " + var1);
-  }
-
-  if (maxFiles > 1) {
-    Serial.println("var2: " + var2);
-  }
-  if (maxFiles > 2) {
-    Serial.println("var2: " + var3);
-  }
-  readDataAndAssignVariables(var3);
+//   if (maxFiles > 0) {
+//     Serial.println("var1: " + var1);
+//   }
+// 4
+//   if (maxFiles > 1) {
+//     Serial.println("var2: " + var2);
+//   }
+//   if (maxFiles > 2) {
+//     Serial.println("var2: " + var3);
+//   }
+  readDataAndAssignVariables(var1);
 }
 
 void logData() {

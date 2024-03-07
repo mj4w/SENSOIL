@@ -2,8 +2,8 @@
 #include <SoftwareSerial.h>
 
 // Define SoftwareSerial pins
-#define RX_PIN 2
-#define TX_PIN 3
+#define RX_PIN 17
+#define TX_PIN 16
 
 SoftwareSerial DGUS_SERIAL(RX_PIN, TX_PIN);
 

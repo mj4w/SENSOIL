@@ -44,8 +44,8 @@ File myFile;
 RTClib myRTC;
 DS3231 Clock;
 
-SoftwareSerial mySerial1(10,11);
-SoftwareSerial dwinSerial(19,18);
+SoftwareSerial mySerial1(12,13);
+SoftwareSerial dwinSerial(10,11);
 SoftwareSerial mySerial2(14,15); // TX, RX
 Adafruit_Thermal printer(&mySerial2);
 String nit_value,phos_value,potas_value,ph_value,soil_salinity_class,mois_value;
@@ -59,7 +59,7 @@ int button_selector_texture = 0;
 int buttonState = 0;
 int oldButtonState = LOW;
 
-const unsigned int PRINT_BUTTON = 13;
+const unsigned int PRINT_BUTTON = 8;
 void setup() {
   // put your setup code here, to run once:
   Serial.begin(9600);
@@ -92,6 +92,9 @@ void loop() {
   int lightSwitchState = digitalRead(LIGHT_SELECTOR);
   int mediumSwitchState = digitalRead(MEDIUM_SELECTOR);
   int heavySwitchState = digitalRead(HEAVY_SELECTOR);
+  Serial.print(lightSwitchState);
+  Serial.print(mediumSwitchState);
+  Serial.print(heavySwitchState);
   button_selector_season = digitalRead(DRY_SELECTOR);
   button_selector_variety = digitalRead(INBRED_SELECTOR);
   button_selector_texture = digitalRead(LIGHT_SELECTOR);
