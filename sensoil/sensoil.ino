@@ -734,7 +734,7 @@ void potassium_(float potas){
   Serial.println();
   Serial.print("Potassium Value: ");
   Serial.print(potas_value);
-  Serial.println();=
+  Serial.println();
 
   if (potas >= 0 && potas <= 0.190){
     unsigned char Potassium_Label[] = {0x5A,0xA5,0x10,0x82,0x23,0x00,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
