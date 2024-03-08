@@ -303,7 +303,7 @@ String createFileName() {
 void setup() {
   
   Serial.begin(9600);
-  dwinSerial.begin(9600);
+  dwinSerial.begin(115200);
   // mySerial1.begin(4800);
   Serial.println(" DWIN Arduino Button Demo ");
   Serial.println("Lets Begin");
