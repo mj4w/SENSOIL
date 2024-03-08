@@ -426,7 +426,7 @@ void loop() {
       nitro_split1 = nit_both * 0.30;
       phos_split1 = phos_both;
 
-      if (potas_both < 45) {
+      if (potas_both <= 45) {
         potas_split1 = potas_both;
       }
       else{

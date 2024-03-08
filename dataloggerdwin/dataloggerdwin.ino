@@ -7,7 +7,7 @@ const int maxFiles = 10; // Maximum number of files, adjust as needed
 
 String fileNames[maxFiles]; // Array to store file names
 SoftwareSerial dwinSerial(10,11); // RX, TX
-SoftwareSerial mySerial1(2,3);
+SoftwareSerial mySerial1(12,13);
 String season, variety, texture;
 float nitrogen, phosphorus, potassium, ec, ph, moisture;
 int n, p, k;
@@ -67,51 +67,51 @@ void dwinListen(){
   String var7 = fileNames[6];
   String var8 = fileNames[7];
   String var9 = fileNames[8];
-  // for (int i = 0; i < maxFiles; ++i) 
-  // {
-  //   if (i == 0) {
-  //       unsigned char data1[] = {0x5A,0xA5,0x10,0x82,0x12,0x20,0x64,0x61,0x74,0x61,0x31};
-  //       dwinSerial.write(data1,11);
-  //       Serial.println("var" + String(i + 1) + ": " + fileNames[i]);
-  //   } else if (i == 1 ) {
-  //       unsigned char data2[] = {0x5A,0xA5,0x10,0x82,0x12,0x30,0x64,0x61,0x74,0x61,0x32};
-  //       dwinSerial.write(data2,11);
-  //       Serial.println("var" + String(i + 1) + ": " + fileNames[i]);
-  //   } else if (i == 2 ) {
-  //       unsigned char data3[] = {0x5A,0xA5,0x10,0x82,0x12,0x40,0x64,0x61,0x74,0x61,0x33};
-  //       dwinSerial.write(data3,11);
-  //       Serial.println("var" + String(i + 1) + ": " + fileNames[i]);
-  //   } else if (i == 3 ) {
-  //       unsigned char data4[] = {0x5A,0xA5,0x10,0x82,0x12,0x50,0x64,0x61,0x74,0x61,0x34};
-  //       dwinSerial.write(data4,11);
-  //       Serial.println("var" + String(i + 1) + ": " + fileNames[i]);
-  //   }
-  //   // } else if (i == 4 ) {
-  //   //     unsigned char data1[] = {0x5A,0xA5,0x10,0x82,0x12,0x20,0x64,0x61,0x74,0x61,0x35};
-  //   //     dwinSerial.write(data1,11);
-  //   //     Serial.println("var" + String(i + 1) + ": " + fileNames[i]);
-  //   // } else if (i == 5 ) {
-  //   //     unsigned char data1[] = {0x5A,0xA5,0x10,0x82,0x12,0x20,0x64,0x61,0x74,0x61,0x36};
-  //   //     dwinSerial.write(data1,11);
-  //   //     Serial.println("var" + String(i + 1) + ": " + fileNames[i]);
-  //   // } else if (i == 6 ) {
-  //   //     unsigned char data1[] = {0x5A,0xA5,0x10,0x82,0x12,0x20,0x64,0x61,0x74,0x61,0x37};
-  //   //     dwinSerial.write(data1,11);
-  //   //     Serial.println("var" + String(i + 1) + ": " + fileNames[i]);
-  //   // } else if (i == 7 ) {
-  //   //     unsigned char data1[] = {0x5A,0xA5,0x10,0x82,0x12,0x20,0x64,0x61,0x74,0x61,0x38};
-  //   //     dwinSerial.write(data1,11);
-  //   //     Serial.println("var" + String(i + 1) + ": " + fileNames[i]);
-  //   // } else if (i == 8 ) {
-  //   //     unsigned char data1[] = {0x5A,0xA5,0x10,0x82,0x12,0x20,0x64,0x61,0x74,0x61,0x39};
-  //   //     dwinSerial.write(data1,11);
-  //   //     Serial.println("var" + String(i + 1) + ": " + fileNames[i]);
-  //   // } else if (i == 9 ) {
-  //   //     unsigned char data1[] = {0x5A,0xA5,0x10,0x82,0x12,0x20,0x64,0x61,0x74,0x61,0x31,0x30};
-  //   //     dwinSerial.write(data1,11);
-  //   //     Serial.println("var" + String(i + 1) + ": " + fileNames[i]);
-  //   // }
-  // }
+  for (int i = 0; i < maxFiles; ++i) 
+  {
+    if (i == 0) {
+        unsigned char data1[] = {0x5A,0xA5,0x10,0x82,0x10,0x00,0x64,0x61,0x74,0x61,0x31};
+        dwinSerial.write(data1,11);
+        Serial.println("var" + String(i + 1) + ": " + fileNames[i]);
+    } else if (i == 1 ) {
+        unsigned char data2[] = {0x5A,0xA5,0x10,0x82,0x12,0x30,0x64,0x61,0x74,0x61,0x32};
+        dwinSerial.write(data2,11);
+        Serial.println("var" + String(i + 1) + ": " + fileNames[i]);
+    } else if (i == 2 ) {
+        unsigned char data3[] = {0x5A,0xA5,0x09,0x82,0x42,0x00,0x4C,0x69,0x67,0x68,0x74,0x2e};
+        dwinSerial.write(data3,11);
+        Serial.println("var" + String(i + 1) + ": " + fileNames[i]);
+    } else if (i == 3 ) {
+        unsigned char data4[] = {0x5A,0xA5,0x10,0x82,0x12,0x50,0x64,0x61,0x74,0x61,0x34};
+        dwinSerial.write(data4,11);
+        Serial.println("var" + String(i + 1) + ": " + fileNames[i]);
+    }
+    // } else if (i == 4 ) {
+    //     unsigned char data1[] = {0x5A,0xA5,0x10,0x82,0x12,0x20,0x64,0x61,0x74,0x61,0x35};
+    //     dwinSerial.write(data1,11);
+    //     Serial.println("var" + String(i + 1) + ": " + fileNames[i]);
+    // } else if (i == 5 ) {
+    //     unsigned char data1[] = {0x5A,0xA5,0x10,0x82,0x12,0x20,0x64,0x61,0x74,0x61,0x36};
+    //     dwinSerial.write(data1,11);
+    //     Serial.println("var" + String(i + 1) + ": " + fileNames[i]);
+    // } else if (i == 6 ) {
+    //     unsigned char data1[] = {0x5A,0xA5,0x10,0x82,0x12,0x20,0x64,0x61,0x74,0x61,0x37};
+    //     dwinSerial.write(data1,11);
+    //     Serial.println("var" + String(i + 1) + ": " + fileNames[i]);
+    // } else if (i == 7 ) {
+    //     unsigned char data1[] = {0x5A,0xA5,0x10,0x82,0x12,0x20,0x64,0x61,0x74,0x61,0x38};
+    //     dwinSerial.write(data1,11);
+    //     Serial.println("var" + String(i + 1) + ": " + fileNames[i]);
+    // } else if (i == 8 ) {
+    //     unsigned char data1[] = {0x5A,0xA5,0x10,0x82,0x12,0x20,0x64,0x61,0x74,0x61,0x39};
+    //     dwinSerial.write(data1,11);
+    //     Serial.println("var" + String(i + 1) + ": " + fileNames[i]);
+    // } else if (i == 9 ) {
+    //     unsigned char data1[] = {0x5A,0xA5,0x10,0x82,0x12,0x20,0x64,0x61,0x74,0x61,0x31,0x30};
+    //     dwinSerial.write(data1,11);
+    //     Serial.println("var" + String(i + 1) + ": " + fileNames[i]);
+    // }
+  }
 
 
   while (dwinSerial.available()) {
@@ -303,8 +303,8 @@ String createFileName() {
 void setup() {
   
   Serial.begin(9600);
-  dwinSerial.begin(115200);
-  mySerial1.begin(4800);
+  dwinSerial.begin(9600);
+  // mySerial1.begin(4800);
   Serial.println(" DWIN Arduino Button Demo ");
   Serial.println("Lets Begin");
 
@@ -321,4 +321,10 @@ void setup() {
 void loop() { 
   dwinListen();
   // logData();
+  unsigned char Season_Dwin[] = {0x5A,0xA5,0x06,0x82,0x41,0x00,0x57,0x65,0x74};
+  unsigned char Texture_Dwin[] = {0x5A,0xA5,0x09,0x82,0x42,0x00,0x4C,0x69,0x67,0x68,0x74,0x2e};
+  unsigned char Variety_Dwin[] = {0x5A,0xA5,0x09,0x82,0x43,0x00,0x48,0x79,0x62,0x72,0x69,0x64};
+  dwinSerial.write(Season_Dwin,9);
+  dwinSerial.write(Texture_Dwin,12);
+  dwinSerial.write(Variety_Dwin,12);
 }
