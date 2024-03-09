@@ -48,10 +48,10 @@ File myFile;
 RTClib myRTC;
 DS3231 Clock;
 
-SoftwareSerial mySerial(12,13);
-SoftwareSerial dwinSerial(10,11);
-SoftwareSerial mySerial2(14,15); // TX, RX
-Adafruit_Thermal printer(&mySerial2);
+// SoftwareSerial Serial1(12,13);
+// SoftwareSerial Serial2(10,11);
+SoftwareSerial mySerial(14,15); // TX, RX
+Adafruit_Thermal printer(&mySerial);
 String nit_value,phos_value,potas_value,ph_value,soil_salinity_class,mois_value;
 String season,variety,texture;
 String filename;
@@ -87,6 +87,18 @@ void listFiles() {
   }
   root.close();
 }
+void deleteFile(String fileName){
+  if (SD.exists(fileName)) {
+  // File exists, delete it
+  if (SD.remove(fileName)) {
+    Serial.println("File deleted successfully.");
+  } else {
+    Serial.println("Error deleting file.");
+  }
+  } else {
+    Serial.println("File does not exist.");
+  }
+}
 void dwinListen(){
   int startAdd = 00;
   int endAdd = 00;
@@ -103,39 +115,39 @@ void dwinListen(){
   String var7 = fileNames[6];
   String var8 = fileNames[7];
   String var9 = fileNames[8];
-  // for (int i = 0; i < maxFiles; ++i) 
-  // {
-  //   if (i == 0) {
-  //       unsigned char data1[] = {0x5A,0xA5,0x10,0x82,0x10,0x00,0x64,0x61,0x74,0x61,0x31};
-  //       dwinSerial.write(data1,11);
-  //       Serial.println("var" + String(i + 1) + ": " + fileNames[i]);
-  //   } else if (i == 1 ) {
-  //       unsigned char data2[] = {0x5A,0xA5,0x10,0x82,0x12,0x30,0x64,0x61,0x74,0x61,0x32};
-  //       dwinSerial.write(data2,11);
-  //       Serial.println("var" + String(i + 1) + ": " + fileNames[i]);
-  //   } else if (i == 2 ) {
-  //       unsigned char data3[] = {0x5A,0xA5,0x10,0x82,0x12,0x40,0x64,0x61,0x74,0x61,0x33};
-  //       dwinSerial.write(data3,11);
-  //       Serial.println("var" + String(i + 1) + ": " + fileNames[i]);
-  //   } else if (i == 3 ) {
-  //       unsigned char data4[] = {0x5A,0xA5,0x10,0x82,0x12,0x50,0x64,0x61,0x74,0x61,0x34};
-  //       dwinSerial.write(data4,11);
-  //       Serial.println("var" + String(i + 1) + ": " + fileNames[i]);
-  //   }
+  for (int i = 0; i < maxFiles; ++i) 
+  {
+    if (i == 0) {
+        unsigned char data1[] = {0x5A,0xA5,0x10,0x82,0x31,0x00,0x64,0x61,0x74,0x61,0x31};
+        Serial2.write(data1,11);
+        Serial.println("var" + String(i + 1) + ": " + fileNames[i]);
+    } else if (i == 1 ) {
+        unsigned char data2[] = {0x5A,0xA5,0x10,0x82,0x31,0x10,0x64,0x61,0x74,0x61,0x32};
+        Serial2.write(data2,11);
+        Serial.println("var" + String(i + 1) + ": " + fileNames[i]);
+    } else if (i == 2 ) {
+        unsigned char data3[] = {0x5A,0xA5,0x10,0x82,0x31,0x20,0x64,0x61,0x74,0x61,0x33};
+        Serial2.write(data3,11);
+        Serial.println("var" + String(i + 1) + ": " + fileNames[i]);
+    } else if (i == 3 ) {
+        unsigned char data4[] = {0x5A,0xA5,0x10,0x82,0x31,0x30,0x64,0x61,0x74,0x61,0x34};
+        Serial2.write(data4,11);
+        Serial.println("var" + String(i + 1) + ": " + fileNames[i]);
+    }
 
-  // }
+  }
 
 
-  while (dwinSerial.available()) {
-      int inhex = dwinSerial.read();
+  while (Serial2.available()) {
+      int inhex = Serial2.read();
       if( inhex == 90 || inhex == 165){
         continue;
       }
       
       for (int i=1; i<=inhex; i++) {
         // Serial.print(inhex);
-        while(!dwinSerial.available()); 
-        int incomingByte = dwinSerial.read();
+        while(!Serial2.available()); 
+        int incomingByte = Serial2.read();
         // Serial.print(incomingByte);
         if( i == 2 ){
           startAdd = incomingByte;
@@ -151,10 +163,10 @@ void dwinListen(){
     address = String(startAdd)+String(endAdd);
     Serial.println("Address "+ address +" Data "+String(dataVal));
 
-    // if (address == "1816" || address == "15590" && dataVal == 90 || address == "13075" || address == "3420"){
-    //   deleteFile(filename);
-    //   Serial.println(filename);
-    // }
+    if (address == "1656"){
+      deleteFile(filename);
+      Serial.println(filename);
+    }
 
     // if (address == "185" || address == "1865" || address == "90165"){
     //   filename = var1;
@@ -191,7 +203,27 @@ void dwinListen(){
 
   }
 }
+// void readDataAndAssignVariables(String fileName) {
+//   File dataFile = SD.open(fileName);
 
+//   if (dataFile) {
+//     Serial.println("Reading data from file: " + String(fileName));
+
+//     // Read data from the file line by line and assign values to variables
+//     while (dataFile.available()) {
+//       String dataLine = dataFile.readStringUntil('\n');
+//       parseAndAssignVariables(dataLine);
+//     }
+
+//     // Close the file
+//     dataFile.close();
+
+//     // Print the assigned values for verification
+//     printAssignedValues();
+//   } else {
+//     Serial.println("Error opening file: " + String(fileName));
+//   }
+// }
 String createFileName() {
   String fileName = "data_" + String(random(1000)) + ".csv";
   return fileName;
@@ -277,15 +309,15 @@ void nutrient_reco(float nit_both_val, float phos_both_val, float potas_both_val
   /*------Send Data to Display------*/
   Nit_Both_Dwin[6] = highByte(nb);
   Nit_Both_Dwin[7] = lowByte(nb);
-  dwinSerial.write(Nit_Both_Dwin, 8);
+  Serial2.write(Nit_Both_Dwin, 8);
   
   Phos_Both_Dwin[6] = highByte(pb);
   Phos_Both_Dwin[7] = lowByte(pb);
-  dwinSerial.write(Phos_Both_Dwin, 8);
+  Serial2.write(Phos_Both_Dwin, 8);
 
   Potas_Both_Dwin[6] = highByte(pob);
   Potas_Both_Dwin[7] = lowByte(pob);
-  dwinSerial.write(Potas_Both_Dwin, 8);
+  Serial2.write(Potas_Both_Dwin, 8);
 }
 
 void phosphorus_(float pH, float phos){
@@ -347,45 +379,45 @@ void phosphorus_(float pH, float phos){
   if(pH > 5.5) {
     if (phos >= 0 && phos <= 6){
       unsigned char Phosphorus_Label[] = {0x5A,0xA5,0x10,0x82,0x21,0x00,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
-      dwinSerial.write(Phosphorus_Label,19); 
+      Serial2.write(Phosphorus_Label,19); 
     }
     else if (phos >= 6.1 && phos <= 10){
       unsigned char Phosphorus_Label[] = {0x5A,0xA5,0x10,0x82,0x21,0x00,0x4D,0x4F,0x44,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
-      dwinSerial.write(Phosphorus_Label,19); 
+      Serial2.write(Phosphorus_Label,19); 
     }
     else if (phos >= 10.1 && phos <= 15){
       unsigned char Phosphorus_Label[] = {0x5A,0xA5,0x10,0x82,0x21,0x00,0x4D,0x4F,0x44,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
-      dwinSerial.write(Phosphorus_Label,19);
+      Serial2.write(Phosphorus_Label,19);
     }
     else if (phos >= 15.1 && phos <= 100){
       unsigned char Phosphorus_Label[] = {0x5A,0xA5,0x10,0x82,0x21,0x00,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
-      dwinSerial.write(Phosphorus_Label,19); 
+      Serial2.write(Phosphorus_Label,19); 
     }
     else if (phos > 100){
       unsigned char Phosphorus_Label[] = {0x5A,0xA5,0x10,0x82,0x21,0x00,0x56,0x45,0x52,0x59,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D,0x2D,0x2D};
-      dwinSerial.write(Phosphorus_Label,19); 
+      Serial2.write(Phosphorus_Label,19); 
     }
   }
   if (pH <= 5.5) {
     if (phos >= 0 && phos <= 2) {
       unsigned char Phosphorus_Label[] = {0x5A,0xA5,0x10,0x82,0x21,0x00,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
-      dwinSerial.write(Phosphorus_Label,19); 
+      Serial2.write(Phosphorus_Label,19); 
     }
     if (phos >= 2.1 && phos <= 6){
       unsigned char Phosphorus_Label[] = {0x5A,0xA5,0x10,0x82,0x21,0x00,0x4D,0x4F,0x44,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
-      dwinSerial.write(Phosphorus_Label,19); 
+      Serial2.write(Phosphorus_Label,19); 
     }
     if (phos >= 6.1 && phos <= 10){
       unsigned char Phosphorus_Label[] = {0x5A,0xA5,0x10,0x82,0x21,0x00,0x4D,0x4F,0x44,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
-      dwinSerial.write(Phosphorus_Label,19);
+      Serial2.write(Phosphorus_Label,19);
     }
     if (phos >= 10.1 && phos <= 75){
     unsigned char Phosphorus_Label[] = {0x5A,0xA5,0x10,0x82,0x21,0x00,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
-    dwinSerial.write(Phosphorus_Label,19);  
+    Serial2.write(Phosphorus_Label,19);  
     }
     else if (phos > 75) {
       unsigned char Phosphorus_Label[] = {0x5A,0xA5,0x10,0x82,0x21,0x00,0x56,0x45,0x52,0x59,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D,0x2D,0x2D};
-      dwinSerial.write(Phosphorus_Label,19); 
+      Serial2.write(Phosphorus_Label,19); 
     }
   }
 
@@ -423,23 +455,23 @@ void potassium_(float potas){
 
   if (potas >= 0 && potas <= 0.190){
     unsigned char Potassium_Label[] = {0x5A,0xA5,0x10,0x82,0x23,0x00,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
-    dwinSerial.write(Potassium_Label,19); 
+    Serial2.write(Potassium_Label,19); 
   }
   else if (potas >= 0.191 && potas <= 0.290){
     unsigned char Potassium_Label[] = {0x5A,0xA5,0x10,0x82,0x23,0x00,0x4D,0x4F,0x44,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
-    dwinSerial.write(Potassium_Label,19); 
+    Serial2.write(Potassium_Label,19); 
   }
   else if (potas >= 0.291 && potas <= 0.385){
     unsigned char Potassium_Label[] = {0x5A,0xA5,0x10,0x82,0x23,0x00,0x4D,0x4F,0x44,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
-    dwinSerial.write(Potassium_Label,19);
+    Serial2.write(Potassium_Label,19);
   }
   else if (potas >= 0.386 && potas <= 1.000){
     unsigned char Potassium_Label[] = {0x5A,0xA5,0x10,0x82,0x23,0x00,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
-    dwinSerial.write(Potassium_Label,19); 
+    Serial2.write(Potassium_Label,19); 
   }
   else if (potas >= 1.000){
     unsigned char Potassium_Label[] = {0x5A,0xA5,0x10,0x82,0x23,0x00,0x56,0x45,0x52,0x59,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D,0x2D,0x2D};
-    dwinSerial.write(Potassium_Label,19); 
+    Serial2.write(Potassium_Label,19); 
   }
 }
 void soil_ph(float pH){
@@ -466,15 +498,15 @@ void soil_ph(float pH){
 
   if (pH == 7){
     unsigned char Soil_ph[] = {0x5A,0xA5,0x10,0x82,0x15,0x00,0x4E,0x45,0x55,0x54,0x52,0x41,0x4C,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
-    dwinSerial.write(Soil_ph,19);
+    Serial2.write(Soil_ph,19);
   }
   else if (pH >= 0 && pH < 7){
     unsigned char Soil_ph[] = {0x5A,0xA5,0x10,0x82,0x15,0x00,0x41,0x43,0x49,0x44,0x49,0x43,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
-    dwinSerial.write(Soil_ph,19);
+    Serial2.write(Soil_ph,19);
   }
   else if (pH >= 7 && pH <= 14){
     unsigned char Soil_ph[] = {0x5A,0xA5,0x10,0x82,0x15,0x00,0x41,0x4C,0x4B,0x41,0x4C,0x49,0x4E,0x45,0x2D,0x2D,0x2D,0x2D,0x2D};
-    dwinSerial.write(Soil_ph,19);
+    Serial2.write(Soil_ph,19);
   }
 }
 void electrical_conductivity(float ec){
@@ -504,23 +536,23 @@ void electrical_conductivity(float ec){
 
   if (ec >= 0 && ec <= 2) {
     unsigned char Saline[] = {0x5A,0xA5,0x10,0x82,0x16,0x00,0x4E,0x4F,0x4E,0x53,0x41,0x4C,0x49,0x4E,0x45,0x2D,0x2D,0x2D,0x2D};
-    dwinSerial.write(Saline,19);
+    Serial2.write(Saline,19);
   }
   else if (ec > 2.1 && ec <= 4) {
     unsigned char Saline[] = {0x5A,0xA5,0x10,0x82,0x16,0x00,0x53,0x4C,0x49,0x47,0x48,0x54,0x4C,0x59,0x2D,0x2D,0x2D,0x2D,0x2D};
-    dwinSerial.write(Saline,19);
+    Serial2.write(Saline,19);
   } 
   else if (ec > 4.1 && ec <= 8) {
     unsigned char Saline[] = {0x5A,0xA5,0x10,0x82,0x16,0x00,0x4D,0x4F,0x44,0x45,0x52,0x41,0x54,0x45,0x4C,0x59,0x2D,0x2D,0x2D};
-    dwinSerial.write(Saline,19);
+    Serial2.write(Saline,19);
   }
   else if (ec > 8.1 &&  ec < 16) {
     unsigned char Saline[] = {0x5A,0xA5,0x10,0x82,0x16,0x00,0x53,0x45,0x56,0x45,0x52,0x45,0x4C,0x59,0x2D,0x2D,0x2D,0x2D,0x2D};
-    dwinSerial.write(Saline,19);
+    Serial2.write(Saline,19);
   }
   else if (ec > 16){
     unsigned char Saline[] = {0x5A,0xA5,0x10,0x82,0x16,0x00,0x56,0x45,0x52,0x59,0x53,0x45,0x56,0x45,0x52,0x45,0x4C,0x59,0x2D};
-    dwinSerial.write(Saline,19);
+    Serial2.write(Saline,19);
   }
 
 }
@@ -541,11 +573,11 @@ void moisture_(float moisture){
   Serial.println();
   if (moisture <= 15){
     unsigned char Moisture[] = {0x5A,0xA5,0x10,0x82,0x17,0x00,0x56,0x45,0x52,0x59,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
-    dwinSerial.write(Moisture,19);
+    Serial2.write(Moisture,19);
   }
   else if (moisture > 15){
     unsigned char Moisture[] = {0x5A,0xA5,0x10,0x82,0x17,0x00,0x4D,0x4F,0x49,0x53,0x54,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
-    dwinSerial.write(Moisture,19);
+    Serial2.write(Moisture,19);
   }
 }
 
@@ -555,27 +587,27 @@ void hybrid_nitrogen_lws(float nitro){
 
   if (nitro <= 2.0) {
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
-    dwinSerial.write(Nitrogen_Label_Dwin,19); 
+    Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 100;
     nit_value = "LOW";
 
   }
   else if (nitro >= 2.1 && nitro <= 3.5) {
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4D,0x4F,0x44,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
-    dwinSerial.write(Nitrogen_Label_Dwin,19); 
+    Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 80;
     nit_value = "MODERATELY LOW";
 
   }
   else if (nitro >= 3.6 && nitro <= 4.5) {
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4D,0x4F,0x44,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
-    dwinSerial.write(Nitrogen_Label_Dwin,19); 
+    Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 60;
     nit_value = "MODERATELY HIGH";
   }
   else if (nitro >= 4.6){
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
-    dwinSerial.write(Nitrogen_Label_Dwin,19); 
+    Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 7;
     nit_value = "HIGH";
   }
@@ -593,27 +625,27 @@ void hybrid_nitrogen_mws(float nitro){
 
   if (nitro <= 2.0) {
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
-    dwinSerial.write(Nitrogen_Label_Dwin,19); 
+    Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 90;
     nit_value = "LOW";
 
   }
   else if (nitro >= 2.1 && nitro <= 3.5) {
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4D,0x4F,0x44,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
-    dwinSerial.write(Nitrogen_Label_Dwin,19); 
+    Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 70;
     nit_value = "MODERATELY LOW";
 
   }
   else if (nitro >= 3.6 && nitro <= 4.5) {
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4D,0x4F,0x44,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
-    dwinSerial.write(Nitrogen_Label_Dwin,19); 
+    Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 50;
     nit_value = "MODERATELY HIGH";
   }
   else if (nitro >= 4.6){
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
-    dwinSerial.write(Nitrogen_Label_Dwin,19); 
+    Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 7;
     nit_value = "HIGH";
   }
@@ -631,27 +663,27 @@ void hybrid_nitrogen_hws(float nitro){
 
   if (nitro <= 2.0) {
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
-    dwinSerial.write(Nitrogen_Label_Dwin,19); 
+    Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 80;
     nit_value = "LOW";
 
   }
   else if (nitro >= 2.1 && nitro <= 3.5) {
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4D,0x4F,0x44,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
-    dwinSerial.write(Nitrogen_Label_Dwin,19); 
+    Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 60;
     nit_value = "MODERATELY LOW";
 
   }
   else if (nitro >= 3.6 && nitro <= 4.5) {
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4D,0x4F,0x44,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
-    dwinSerial.write(Nitrogen_Label_Dwin,19); 
+    Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 40;
     nit_value = "MODERATELY HIGH";
   }
   else if (nitro >= 4.6){
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
-    dwinSerial.write(Nitrogen_Label_Dwin,19); 
+    Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 7;
     nit_value = "HIGH";
   }
@@ -669,27 +701,27 @@ void hybrid_nitrogen_lds(float nitro){
 
   if (nitro <= 2.0) {
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
-    dwinSerial.write(Nitrogen_Label_Dwin,19); 
+    Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 120;
     nit_value = "LOW";
 
   }
   else if (nitro >= 2.1 && nitro <= 3.5) {
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4D,0x4F,0x44,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
-    dwinSerial.write(Nitrogen_Label_Dwin,19); 
+    Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 100;
     nit_value = "MODERATELY LOW";
 
   }
   else if (nitro >= 3.6 && nitro <= 4.5) {
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4D,0x4F,0x44,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
-    dwinSerial.write(Nitrogen_Label_Dwin,19); 
+    Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 80;
     nit_value = "MODERATELY HIGH";
   }
   else if (nitro >= 4.6){
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
-    dwinSerial.write(Nitrogen_Label_Dwin,19); 
+    Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 7;
     nit_value = "HIGH";
   }
@@ -710,24 +742,24 @@ void hybrid_nitrogen_mds(float nitro){
     nit_both = 110;
     nit_value = "LOW";
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
-    dwinSerial.write(Nitrogen_Label_Dwin,19);  
+    Serial2.write(Nitrogen_Label_Dwin,19);  
   }
   else if (nitro >= 2.1 && nitro <= 3.5) {
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4D,0x4F,0x44,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
-    dwinSerial.write(Nitrogen_Label_Dwin,19); 
+    Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 90;
     nit_value = "MODERATELY LOW";
 
   }
   else if (nitro >= 3.6 && nitro <= 4.5) {
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4D,0x4F,0x44,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
-    dwinSerial.write(Nitrogen_Label_Dwin,19); 
+    Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 70;
     nit_value = "MODERATELY HIGH";
   }
   else if (nitro >= 4.6){
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
-    dwinSerial.write(Nitrogen_Label_Dwin,19); 
+    Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 7;
     nit_value = "HIGH";
   }
@@ -745,27 +777,27 @@ void hybrid_nitrogen_hds(float nitro){
 
   if (nitro <= 2.0) {
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
-    dwinSerial.write(Nitrogen_Label_Dwin,19); 
+    Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 100;
     nit_value = "LOW";
 
   }
   else if (nitro >= 2.1 && nitro <= 3.5) {
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4D,0x4F,0x44,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
-    dwinSerial.write(Nitrogen_Label_Dwin,19); 
+    Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 80;
     nit_value = "MODERATELY LOW";
 
   }
   else if (nitro >= 3.6 && nitro <= 4.5) {
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4D,0x4F,0x44,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
-    dwinSerial.write(Nitrogen_Label_Dwin,19); 
+    Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 60;
     nit_value = "MODERATELY HIGH";
   }
   else if (nitro >= 4.6){
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
-    dwinSerial.write(Nitrogen_Label_Dwin,19); 
+    Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 7;
     nit_value = "HIGH";
   }
@@ -785,27 +817,27 @@ void inbred_nitrogen_lws(float nitro){
 
   if (nitro <= 2.0) {
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
-    dwinSerial.write(Nitrogen_Label_Dwin,19); 
+    Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 80;
     nit_value = "LOW";
 
   }
   else if (nitro >= 2.1 && nitro <= 3.5) {
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4D,0x4F,0x44,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
-    dwinSerial.write(Nitrogen_Label_Dwin,19); 
+    Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 60;
     nit_value = "MODERATELY LOW";
 
   }
   else if (nitro >= 3.6 && nitro <= 4.5) {
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4D,0x4F,0x44,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
-    dwinSerial.write(Nitrogen_Label_Dwin,19); 
+    Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 40;
     nit_value = "MODERATELY HIGH";
   }
   else if (nitro >= 4.6){
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
-    dwinSerial.write(Nitrogen_Label_Dwin,19); 
+    Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 7;
     nit_value = "HIGH";
   }
@@ -823,27 +855,27 @@ void inbred_nitrogen_mws(float nitro){
 
   if (nitro <= 2.0) {
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
-    dwinSerial.write(Nitrogen_Label_Dwin,19); 
+    Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 70;
     nit_value = "LOW";
 
   }
   else if (nitro >= 2.1 && nitro <= 3.5) {
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4D,0x4F,0x44,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
-    dwinSerial.write(Nitrogen_Label_Dwin,19); 
+    Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 50;
     nit_value = "MODERATELY LOW";
 
   }
   else if (nitro >= 3.6 && nitro <= 4.5) {
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4D,0x4F,0x44,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
-    dwinSerial.write(Nitrogen_Label_Dwin,19); 
+    Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 30;
     nit_value = "MODERATELY HIGH";
   }
   else if (nitro >= 4.6){
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
-    dwinSerial.write(Nitrogen_Label_Dwin,19); 
+    Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 7;
     nit_value = "HIGH";
   }
@@ -861,27 +893,27 @@ void inbred_nitrogen_hws(float nitro){
 
   if (nitro <= 2.0) {
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
-    dwinSerial.write(Nitrogen_Label_Dwin,19); 
+    Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 60;
     nit_value = "LOW";
 
   }
   else if (nitro >= 2.1 && nitro <= 3.5) {
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4D,0x4F,0x44,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
-    dwinSerial.write(Nitrogen_Label_Dwin,19); 
+    Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 40;
     nit_value = "MODERATELY LOW";
 
   }
   else if (nitro >= 3.6 && nitro <= 4.5) {
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4D,0x4F,0x44,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
-    dwinSerial.write(Nitrogen_Label_Dwin,19); 
+    Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 20;
     nit_value = "MODERATELY HIGH";
   }
   else if (nitro >= 4.6){
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
-    dwinSerial.write(Nitrogen_Label_Dwin,19); 
+    Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 7;
     nit_value = "HIGH";
   }
@@ -901,27 +933,27 @@ void inbred_nitrogen_lds(float nitro){
 
   if (nitro <= 2.0) {
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
-    dwinSerial.write(Nitrogen_Label_Dwin,19); 
+    Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 90;
     nit_value = "LOW";
 
   }
   else if (nitro >= 2.1 && nitro <= 3.5) {
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4D,0x4F,0x44,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
-    dwinSerial.write(Nitrogen_Label_Dwin,19); 
+    Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 70;
     nit_value = "MODERATELY LOW";
 
   }
   else if (nitro >= 3.6 && nitro <= 4.5) {
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4D,0x4F,0x44,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
-    dwinSerial.write(Nitrogen_Label_Dwin,19);
+    Serial2.write(Nitrogen_Label_Dwin,19);
     nit_both = 50;
     nit_value = "MODERATELY HIGH";
   }
   else if (nitro >= 4.6){
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
-    dwinSerial.write(Nitrogen_Label_Dwin,19); 
+    Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 7;
     nit_value = "HIGH";
   }
@@ -939,27 +971,27 @@ void inbred_nitrogen_mds(float nitro){
 
   if (nitro <= 2.0) {
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
-    dwinSerial.write(Nitrogen_Label_Dwin,19); 
+    Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 80;
     nit_value = "LOW";
 
   }
   else if (nitro >= 2.1 && nitro <= 3.5) {
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4D,0x4F,0x44,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
-    dwinSerial.write(Nitrogen_Label_Dwin,19); 
+    Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 60;
     nit_value = "MODERATELY LOW";
 
   }
   else if (nitro >= 3.6 && nitro <= 4.5) {
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4D,0x4F,0x44,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
-    dwinSerial.write(Nitrogen_Label_Dwin,19); 
+    Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 40;
     nit_value = "MODERATELY HIGH";
   }
   else if (nitro >= 4.6){
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
-    dwinSerial.write(Nitrogen_Label_Dwin,19); 
+    Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 7;
     nit_value = "HIGH";
   }
@@ -977,27 +1009,27 @@ void inbred_nitrogen_hds(float nitro){
 
   if (nitro <= 2.0) {
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
-    dwinSerial.write(Nitrogen_Label_Dwin,19); 
+    Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 70;
     nit_value = "LOW";
 
   }
   else if (nitro >= 2.1 && nitro <= 3.5) {
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4D,0x4F,0x44,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
-    dwinSerial.write(Nitrogen_Label_Dwin,19); 
+    Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 50;
     nit_value = "MODERATELY LOW";
 
   }
   else if (nitro >= 3.6 && nitro <= 4.5) {
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x4D,0x4F,0x44,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
-    dwinSerial.write(Nitrogen_Label_Dwin,19); 
+    Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 30;
     nit_value = "MODERATELY HIGH";
   }
   else if (nitro >= 4.6){
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
-    dwinSerial.write(Nitrogen_Label_Dwin,19); 
+    Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 7;
     nit_value = "HIGH";
   }
@@ -1016,7 +1048,9 @@ void splitting(int nit_both,int phos_both,int potas_both){
   int nitro_split1,phos_split1,potas_split1;
   int nitro_split2,phos_split2,potas_split2;
   int nitro_split3,phos_split3,potas_split3;
-
+  // Serial.println(nit_both);
+  // Serial.println(phos_both);
+  // Serial.println(potas_both);
     //Splitting
     // 1st, 2nd, 3rd -> Application
 
@@ -1032,6 +1066,9 @@ void splitting(int nit_both,int phos_both,int potas_both){
     else{
       potas_split1 = potas_both * 0.50;
     }
+    // Serial.println(nitro_split1);
+    // Serial.println(phos_split1);
+    // Serial.println(potas_split1);
   }
 
   // second application
@@ -1046,29 +1083,38 @@ void splitting(int nit_both,int phos_both,int potas_both){
     nitro_split2 = nit_both * 0.20;
     phos_split2 = 0;
     potas_split2 = 0;
+    // Serial.println(nitro_split2);
+    // Serial.println(phos_split2);
+    // Serial.println(potas_split2);
   }
   // third application
   if (button_selector_season == 1) {
     // do this
     nitro_split3 = nit_both * 0.40;
     phos_split3 = 0;
-    if (potas_both < 45) {
-      potas_split3 = potas_both * 0.50;
+    if (potas_split1 < 45) {
+      potas_split3 = potas_split1 * 0.50;
     }
     else{
-      potas_split3 = potas_both;
+      potas_split3 = potas_split1;
     }
+    // Serial.println(nitro_split3);
+    // Serial.println(phos_split3);
+    // Serial.println(potas_split3);
   }
   else if (button_selector_season == 0) {
     // do this
     nitro_split3 = nit_both * 0.50;
     phos_split3 = 0;
-    if (potas_both < 45) {
+    if (potas_split1 < 45) {
       potas_split3 = potas_both * 0.50;
     }
-    else{
+    else {
       potas_split3 = potas_both;
     }
+    // Serial.println(nitro_split3);
+    // Serial.println(phos_split3);
+    // Serial.println(potas_split3);
   }
 
 
@@ -1080,32 +1126,106 @@ void splitting(int nit_both,int phos_both,int potas_both){
   // // 1st Application
   String value_fil;
   float n_fil,p_fil,k_fil;
+  float n_fil_last,p_fil_last,k_fil_last;
   if (nitro_split1 > 1 && phos_split1 > 1 && potas_split1 > 1){
       value_fil = "Complete, Triple 14";
+      unsigned char N_fil[8] = {0x5A, 0xA5, 0x05, 0x82, 0x72, 0x00, 0x00, 0x00};
+      unsigned char P_fil[8] = {0x5A, 0xA5, 0x05, 0x82, 0x73, 0x00, 0x00, 0x00};
+      unsigned char K_fil[8] = {0x5A, 0xA5, 0x05, 0x82, 0x74, 0x00, 0x00, 0x00};
       n_fil = 7;
       p_fil = 7;
       k_fil = 7;
+
+      int n_fil_val = static_cast<int>(n_fil);  
+      int p_fil_val = static_cast<int>(p_fil);  
+      int k_fil_val = static_cast<int>(k_fil);  
+      /*------Send Data to Display------*/
+      N_fil[6] = highByte(n_fil_val);
+      N_fil[7] = lowByte(n_fil_val);
+      Serial2.write(N_fil, 8);
+
+      P_fil[6] = highByte(p_fil_val);
+      P_fil[7] = lowByte(p_fil_val);
+      Serial2.write(P_fil, 8);
+
+      K_fil[6] = highByte(k_fil_val);
+      K_fil[7] = lowByte(k_fil_val);
+      Serial2.write(K_fil, 8);
   }
 
   else if (nitro_split1 > 1 && phos_split1 > 1 && potas_split1 < 1){
       value_fil = "Ammonium Phosphate";
+      unsigned char N_fil[8] = {0x5A, 0xA5, 0x05, 0x82, 0x72, 0x00, 0x00, 0x00};
+      unsigned char P_fil[8] = {0x5A, 0xA5, 0x05, 0x82, 0x73, 0x00, 0x00, 0x00};
+      unsigned char K_fil[8] = {0x5A, 0xA5, 0x05, 0x82, 0x74, 0x00, 0x00, 0x00};
       n_fil = 8;
       p_fil = 10;
       k_fil = 0;
+      int n_fil_val = static_cast<int>(n_fil);  
+      int p_fil_val = static_cast<int>(p_fil);  
+      int k_fil_val = static_cast<int>(k_fil);  
+      /*------Send Data to Display------*/
+      N_fil[6] = highByte(n_fil_val);
+      N_fil[7] = lowByte(n_fil_val);
+      Serial2.write(N_fil, 8);
+
+      P_fil[6] = highByte(p_fil_val);
+      P_fil[7] = lowByte(p_fil_val);
+      Serial2.write(P_fil, 8);
+
+      K_fil[6] = highByte(k_fil_val);
+      K_fil[7] = lowByte(k_fil_val);
+      Serial2.write(K_fil, 8);
   }
 
   else if (nitro_split1 < 1 && phos_split1 > 1 && potas_split1 < 1){
       value_fil = "Superphospate";
+      unsigned char N_fil[8] = {0x5A, 0xA5, 0x05, 0x82, 0x72, 0x00, 0x00, 0x00};
+      unsigned char P_fil[8] = {0x5A, 0xA5, 0x05, 0x82, 0x73, 0x00, 0x00, 0x00};
+      unsigned char K_fil[8] = {0x5A, 0xA5, 0x05, 0x82, 0x74, 0x00, 0x00, 0x00};
       n_fil = 0;
       p_fil = 10;
       k_fil = 0;
+      int n_fil_val = static_cast<int>(n_fil);  
+      int p_fil_val = static_cast<int>(p_fil);  
+      int k_fil_val = static_cast<int>(k_fil);  
+      /*------Send Data to Display------*/
+      N_fil[6] = highByte(n_fil_val);
+      N_fil[7] = lowByte(n_fil_val);
+      Serial2.write(N_fil, 8);
+
+      P_fil[6] = highByte(p_fil_val);
+      P_fil[7] = lowByte(p_fil_val);
+      Serial2.write(P_fil, 8);
+
+      K_fil[6] = highByte(k_fil_val);
+      K_fil[7] = lowByte(k_fil_val);
+      Serial2.write(K_fil, 8);
   }
 
   else if (nitro_split1 < 1 && phos_split1 < 1 && potas_split1 > 1){
       value_fil = "Muriate of Potash";
+      unsigned char N_fil[8] = {0x5A, 0xA5, 0x05, 0x82, 0x72, 0x00, 0x00, 0x00};
+      unsigned char P_fil[8] = {0x5A, 0xA5, 0x05, 0x82, 0x73, 0x00, 0x00, 0x00};
+      unsigned char K_fil[8] = {0x5A, 0xA5, 0x05, 0x82, 0x74, 0x00, 0x00, 0x00};
       n_fil = 0;
       p_fil = 0;
       k_fil = 30;
+      int n_fil_val = static_cast<int>(n_fil);  
+      int p_fil_val = static_cast<int>(p_fil);  
+      int k_fil_val = static_cast<int>(k_fil);  
+      /*------Send Data to Display------*/
+      N_fil[6] = highByte(n_fil_val);
+      N_fil[7] = lowByte(n_fil_val);
+      Serial2.write(N_fil, 8);
+
+      P_fil[6] = highByte(p_fil_val);
+      P_fil[7] = lowByte(p_fil_val);
+      Serial2.write(P_fil, 8);
+
+      K_fil[6] = highByte(k_fil_val);
+      K_fil[7] = lowByte(k_fil_val);
+      Serial2.write(K_fil, 8);
   }
 
       
@@ -1113,9 +1233,27 @@ void splitting(int nit_both,int phos_both,int potas_both){
   if (pH < 6.6) {
       if (nitro_split1 > 1 && phos_split1 < 1 && potas_split1 < 1){
           value_fil = "Urea";
+          unsigned char N_fil[8] = {0x5A, 0xA5, 0x05, 0x82, 0x72, 0x00, 0x00, 0x00};
+          unsigned char P_fil[8] = {0x5A, 0xA5, 0x05, 0x82, 0x73, 0x00, 0x00, 0x00};
+          unsigned char K_fil[8] = {0x5A, 0xA5, 0x05, 0x82, 0x74, 0x00, 0x00, 0x00};
           n_fil = 23;
           p_fil = 0;
           k_fil = 0;
+          int n_fil_val = static_cast<int>(n_fil);  
+          int p_fil_val = static_cast<int>(p_fil);  
+          int k_fil_val = static_cast<int>(k_fil);  
+          /*------Send Data to Display------*/
+          N_fil[6] = highByte(n_fil_val);
+          N_fil[7] = lowByte(n_fil_val);
+          Serial2.write(N_fil, 8);
+
+          P_fil[6] = highByte(p_fil_val);
+          P_fil[7] = lowByte(p_fil_val);
+          Serial2.write(P_fil, 8);
+
+          K_fil[6] = highByte(k_fil_val);
+          K_fil[7] = lowByte(k_fil_val);
+          Serial2.write(K_fil, 8);
       }
 
   }
@@ -1123,9 +1261,27 @@ void splitting(int nit_both,int phos_both,int potas_both){
   else {
       if (nitro_split1 > 1 && phos_split1 < 1 && potas_split1 < 1){
           value_fil = "Ammonium Sulfate";
+          unsigned char N_fil[8] = {0x5A, 0xA5, 0x05, 0x82, 0x72, 0x00, 0x00, 0x00};
+          unsigned char P_fil[8] = {0x5A, 0xA5, 0x05, 0x82, 0x73, 0x00, 0x00, 0x00};
+          unsigned char K_fil[8] = {0x5A, 0xA5, 0x05, 0x82, 0x74, 0x00, 0x00, 0x00};
           n_fil = 10.5;
           p_fil = 0;
           k_fil = 0;
+          int n_fil_val = static_cast<int>(n_fil);  
+          int p_fil_val = static_cast<int>(p_fil);  
+          int k_fil_val = static_cast<int>(k_fil);  
+          /*------Send Data to Display------*/
+          N_fil[6] = highByte(n_fil_val);
+          N_fil[7] = lowByte(n_fil_val);
+          Serial2.write(N_fil, 8);
+
+          P_fil[6] = highByte(p_fil_val);
+          P_fil[7] = lowByte(p_fil_val);
+          Serial2.write(P_fil, 8);
+
+          K_fil[6] = highByte(k_fil_val);
+          K_fil[7] = lowByte(k_fil_val);
+          Serial2.write(K_fil, 8);
       }
 
   }
@@ -1136,21 +1292,45 @@ void splitting(int nit_both,int phos_both,int potas_both){
     float result_dividen1 = nitro_split1 / n_fil;
     float result_dividep1 = phos_split1 / p_fil;
     float result_dividek1 = potas_split1 / k_fil;
-
+    // Serial.println(result_dividen1);
+    // Serial.println(result_dividep1);
+    // Serial.println(result_dividek1);
     float lowest_value1 = min(result_dividen1, min(result_dividep1, result_dividek1));
     // print value_fil, lowest_value1
-    Serial.println(lowest_value1);
+    // Serial.println(n_fil);
+    // Serial.println(p_fil);
+    // Serial.println(k_fil);
+    unsigned char Bags[8] = {0x5A, 0xA5, 0x05, 0x82, 0x70, 0x00, 0x00, 0x00};
+    int bags_val = static_cast<int>(lowest_value1);  
+    Bags[6] = highByte(bags_val);
+    Bags[7] = lowByte(bags_val);
+    Serial2.write(Bags, 8);
+    
+    int get = int(lowest_value1 * 100) % 100;
+    float dividedBy2 = float(get) / 2;
+    int roundedValue = int((dividedBy2 + 2.5) / 5) * 5;
+    // Serial.println(roundedValue);
+    unsigned char Kilograms[8] = {0x5A, 0xA5, 0x05, 0x82, 0x71, 0x00, 0x00, 0x00};
+    int kg_val = static_cast<int>(roundedValue);  
+    Kilograms[6] = highByte(kg_val);
+    Kilograms[7] = lowByte(kg_val);
+    Serial2.write(Kilograms, 8);
 
 
     // multiply
     float result_multipn1 = lowest_value1 * n_fil;
     float result_multipp1 = lowest_value1 * p_fil;
     float result_multipk1 = lowest_value1 * k_fil;
-
+    // Serial.println(result_multipn1);
+    // Serial.println(result_multipp1);
+    // Serial.println(result_multipk1);
     // minus the result
     float result_minusn1 = nitro_split1 - result_multipn1;
     float result_minusp1 = phos_split1 - result_multipp1;
     float result_minusk1 = potas_split1 - result_multipk1;
+    // Serial.println(result_minusn1);
+    // Serial.println(result_minusp1);
+    // Serial.println(result_minusk1);
     float nonZeroValue = 0.0;
 
     if (result_minusn1 < 1 && result_minusp1 < 1 && result_multipk1 < 1){
@@ -1170,32 +1350,32 @@ void splitting(int nit_both,int phos_both,int potas_both){
       float divisor = 0.0;
       if (result_minusn1 > 1 && result_minusp1 > 1 && result_minusk1 > 1){
           value_fil_ = "Complete, Triple 14";
-          n_fil = 7;
-          p_fil = 7;
-          k_fil = 7;
+          n_fil_last = 7;
+          p_fil_last = 7;
+          k_fil_last = 7;
       }
 
       else if (result_minusn1 > 1 && result_minusp1 > 1 && result_minusk1 < 1){
           value_fil_ = "Ammonium Phosphate";
-          n_fil = 8;
-          p_fil = 10;
-          k_fil = 0;
+          n_fil_last = 8;
+          p_fil_last = 10;
+          k_fil_last = 0;
       }
 
       else if (result_minusn1 < 1 && result_minusp1 > 1 && result_minusk1 < 1){
           value_fil_ = "Superphospate";
-          n_fil = 0;
-          p_fil = 10;
-          k_fil = 0;
-          divisor = p_fil;
+          n_fil_last = 0;
+          p_fil_last = 10;
+          k_fil_last = 0;
+          divisor = p_fil_last;
       }
 
       else if (result_minusn1 < 1 && result_minusp1 < 1 && result_minusk1 > 1){
           value_fil_ = "Muriate of Potash";
-          n_fil = 0;
-          p_fil = 0;
-          k_fil = 30;
-          divisor = k_fil;
+          n_fil_last = 0;
+          p_fil_last = 0;
+          k_fil_last = 30;
+          divisor = k_fil_last;
       }
 
           
@@ -1203,10 +1383,10 @@ void splitting(int nit_both,int phos_both,int potas_both){
       if (pH < 6.6) {
           if (result_minusn1 > 1 && result_minusp1 < 1 && result_minusk1 < 1){
               value_fil_ = "Urea";
-              n_fil = 23;
-              p_fil = 0;
-              k_fil = 0;
-              divisor = n_fil;
+              n_fil_last = 23;
+              p_fil_last = 0;
+              k_fil_last = 0;
+              divisor = n_fil_last;
           }
 
       }
@@ -1214,10 +1394,10 @@ void splitting(int nit_both,int phos_both,int potas_both){
       else {
           if (result_minusn1 > 1 && result_minusp1 < 1 && result_minusk1 < 1){
               value_fil_ = "Ammonium Sulfate";
-              n_fil = 10.5;
-              p_fil = 0;
-              k_fil = 0;
-              divisor = n_fil;
+              n_fil_last = 10.5;
+              p_fil_last = 0;
+              k_fil_last = 0;
+              divisor = n_fil_last;
           }
 
       }
@@ -1258,14 +1438,12 @@ void setup() {
 
   // Serial initialization
   Serial.begin(9600);
-
+  Serial1.begin(4800);
   // Dwin Serial initialization
-  dwinSerial.begin(115200);
-
+  Serial2.begin(115200);
   // NPK Sensor initialization
-  mySerial.begin(4800);
-  mySerial2.begin(9600);
-
+  // Serial1.begin(4800);
+  mySerial.begin(9600);
   // Printer initialization
   printer.begin();
 
@@ -1276,42 +1454,29 @@ void setup() {
   }
   
   Serial.println("SD card initialized successfully.");
+
 }
 
 void loop() {
-  while (dwinSerial.available() > 0) {
-
-    char inByte = dwinSerial.read();
-
-    Serial.write(inByte);
-
-  }
-  while (mySerial.available() > 0) {
-
-    char inByte = mySerial.read();
-
-    Serial.write(inByte);
-
-  }
   // put your main code here, to run repeatedly:
   byte queryData[] = {0x01, 0x03, 0x00, 0x00, 0x00, 0x07, 0x04, 0x08};
   byte receivedData[19];
   int loopCounter = 15;  // Counter to keep track of loop iterations with data
   const int maxIterations = 20;  
   float nit_val, phos_val, potas_val, ph_val, ec_val, mois_val;
-  mySerial.write(queryData, sizeof(queryData));  // Send the query data to the NPK sensor
+  Serial1.write(queryData, sizeof(queryData));  // Send the query data to the NPK sensor
   delay(1000);  // Wait for 1 second
   int lightSwitchState = digitalRead(LIGHT_SELECTOR);
   int mediumSwitchState = digitalRead(MEDIUM_SELECTOR);
   int heavySwitchState = digitalRead(HEAVY_SELECTOR);
-  Serial.print(lightSwitchState);
-  Serial.print(mediumSwitchState);
-  Serial.print(heavySwitchState);
+  // Serial.print(lightSwitchState);
+  // Serial.print(mediumSwitchState);
+  // Serial.print(heavySwitchState);
   button_selector_season = digitalRead(DRY_SELECTOR);
   button_selector_variety = digitalRead(INBRED_SELECTOR);
   button_selector_texture = digitalRead(LIGHT_SELECTOR);
-  if (mySerial.available() >= sizeof(receivedData)) {   // Check if there are enough bytes available to read
-    mySerial.readBytes(receivedData, sizeof(receivedData));  // Read the received data into the receivedData array
+  if (Serial1.available() >= sizeof(receivedData)) {   // Check if there are enough bytes available to read
+    Serial1.readBytes(receivedData, sizeof(receivedData));  // Read the received data into the receivedData array
     // Parse and print the received data in decimal format
     unsigned int soilHumidity = (receivedData[3] << 8) | receivedData[4];
     // unsigned int soilTemperature = (receivedData[5] << 8) | receivedData[6];
@@ -1340,27 +1505,27 @@ void loop() {
 
     Nitro_Dwin[6] = highByte(n);
     Nitro_Dwin[7] = lowByte(n);
-    dwinSerial.write(Nitro_Dwin, 8);
+    Serial2.write(Nitro_Dwin, 8);
     
     Phos_Dwin[6] = highByte(ps);
     Phos_Dwin[7] = lowByte(ps);
-    dwinSerial.write(Phos_Dwin, 8);
+    Serial2.write(Phos_Dwin, 8);
 
     Potas_Dwin[6] = highByte(k);
     Potas_Dwin[7] = lowByte(k);
-    dwinSerial.write(Potas_Dwin, 8);
+    Serial2.write(Potas_Dwin, 8);
     
     PH_Dwin[6] = highByte(ph);
     PH_Dwin[7] = lowByte(ph);
-    dwinSerial.write(PH_Dwin, 8);
+    Serial2.write(PH_Dwin, 8);
     
     EC_Dwin[6] = highByte(e);
     EC_Dwin[7] = lowByte(e);
-    dwinSerial.write(EC_Dwin, 8);
+    Serial2.write(EC_Dwin, 8);
     
     Moist_Dwin[6] = highByte(m);
     Moist_Dwin[7] = lowByte(m);
-    dwinSerial.write(Moist_Dwin, 8);
+    Serial2.write(Moist_Dwin, 8);
 
     if (button_selector_variety == 1) {
       // light 110
@@ -1381,9 +1546,9 @@ void loop() {
 
         nutrient_reco(nit_both,phos_both,potas_both);
 
-        dwinSerial.write(Season_Dwin,9);
-        dwinSerial.write(Texture_Dwin,12);
-        dwinSerial.write(Variety_Dwin,12);
+        Serial2.write(Season_Dwin,9);
+        Serial2.write(Texture_Dwin,12);
+        Serial2.write(Variety_Dwin,12);
       // medium 111
       } else if (lightSwitchState == 1 && mediumSwitchState && heavySwitchState && button_selector_season == 1){
         unsigned char Season_Dwin[] = {0x5A,0xA5,0x06,0x82,0x20,0x00,0x57,0x45,0x54};
@@ -1401,9 +1566,9 @@ void loop() {
 
         nutrient_reco(nit_both,phos_both,potas_both);
 
-        dwinSerial.write(Season_Dwin,9);
-        dwinSerial.write(Texture_Dwin,12);
-        dwinSerial.write(Variety_Dwin,12);     
+        Serial2.write(Season_Dwin,9);
+        Serial2.write(Texture_Dwin,12);
+        Serial2.write(Variety_Dwin,12);     
       // heavy 011
       }else if (lightSwitchState == 0 && button_selector_season == 1){
         unsigned char Season_Dwin[] = {0x5A,0xA5,0x06,0x82,0x20,0x00,0x57,0x45,0x54};
@@ -1422,9 +1587,9 @@ void loop() {
 
         nutrient_reco(nit_both,phos_both,potas_both);
 
-        dwinSerial.write(Season_Dwin,9);
-        dwinSerial.write(Texture_Dwin,12);
-        dwinSerial.write(Variety_Dwin,12);
+        Serial2.write(Season_Dwin,9);
+        Serial2.write(Texture_Dwin,12);
+        Serial2.write(Variety_Dwin,12);
       }
       // Dry Season
       // light 110
@@ -1445,9 +1610,9 @@ void loop() {
 
         nutrient_reco(nit_both,phos_both,potas_both);
 
-        dwinSerial.write(Season_Dwin,9);
-        dwinSerial.write(Texture_Dwin,12);
-        dwinSerial.write(Variety_Dwin,12);
+        Serial2.write(Season_Dwin,9);
+        Serial2.write(Texture_Dwin,12);
+        Serial2.write(Variety_Dwin,12);
       // medium 111
       } else if (lightSwitchState == 1 && mediumSwitchState && heavySwitchState && button_selector_season == 0){
         unsigned char Season_Dwin[] = {0x5A,0xA5,0x06,0x82,0x20,0x00,0x44,0x52,0x59};
@@ -1466,9 +1631,9 @@ void loop() {
 
         nutrient_reco(nit_both,phos_both,potas_both);
 
-        dwinSerial.write(Season_Dwin,9);
-        dwinSerial.write(Texture_Dwin,12);
-        dwinSerial.write(Variety_Dwin,12);  
+        Serial2.write(Season_Dwin,9);
+        Serial2.write(Texture_Dwin,12);
+        Serial2.write(Variety_Dwin,12);  
 
       // heavy 011
       } else if (lightSwitchState == 0 && button_selector_season == 0){
@@ -1488,9 +1653,9 @@ void loop() {
         
         nutrient_reco(nit_both,phos_both,potas_both);
 
-        dwinSerial.write(Season_Dwin,9);
-        dwinSerial.write(Texture_Dwin,12);
-        dwinSerial.write(Variety_Dwin,12);
+        Serial2.write(Season_Dwin,9);
+        Serial2.write(Texture_Dwin,12);
+        Serial2.write(Variety_Dwin,12);
       }
 
     
@@ -1520,9 +1685,9 @@ void loop() {
 
         nutrient_reco(nit_both,phos_both,potas_both);
 
-        dwinSerial.write(Season_Dwin,9);
-        dwinSerial.write(Texture_Dwin,12);
-        dwinSerial.write(Variety_Dwin,12);
+        Serial2.write(Season_Dwin,9);
+        Serial2.write(Texture_Dwin,12);
+        Serial2.write(Variety_Dwin,12);
       // medium 111
       } else if (lightSwitchState == 1 && mediumSwitchState && heavySwitchState && button_selector_season == 1){
         unsigned char Season_Dwin[] = {0x5A,0xA5,0x06,0x82,0x20,0x00,0x57,0x45,0x54};
@@ -1541,9 +1706,9 @@ void loop() {
 
         nutrient_reco(nit_both,phos_both,potas_both);
 
-        dwinSerial.write(Season_Dwin,9);
-        dwinSerial.write(Texture_Dwin,12);
-        dwinSerial.write(Variety_Dwin,12);
+        Serial2.write(Season_Dwin,9);
+        Serial2.write(Texture_Dwin,12);
+        Serial2.write(Variety_Dwin,12);
       // heavy 011
       } else if (lightSwitchState == 0 && button_selector_season == 1){
         unsigned char Season_Dwin[] = {0x5A,0xA5,0x06,0x82,0x20,0x00,0x57,0x45,0x54};
@@ -1562,9 +1727,9 @@ void loop() {
 
         nutrient_reco(nit_both,phos_both,potas_both);
 
-        dwinSerial.write(Season_Dwin,9);
-        dwinSerial.write(Texture_Dwin,12);
-        dwinSerial.write(Variety_Dwin,12);
+        Serial2.write(Season_Dwin,9);
+        Serial2.write(Texture_Dwin,12);
+        Serial2.write(Variety_Dwin,12);
       }
       // Dry Season
       // light 110
@@ -1576,7 +1741,7 @@ void loop() {
         texture = "LIGHT";
         variety = "INBRED";
         // unsigned char Soil_ph[] = {0x5A,0xA5,0x11,0x82,0x15,0x00,0x4E,0x75,0x65,0x74,0x72,0x61,0x6C,0x2D};
-        // dwinSerial.write(Soil_ph,14);
+        // Serial2.write(Soil_ph,14);
         inbred_nitrogen_lds(nitro);
         phosphorus_(pH,phos);
         potassium_(potas);
@@ -1586,9 +1751,9 @@ void loop() {
 
         nutrient_reco(nit_both,phos_both,potas_both);
 
-        dwinSerial.write(Season_Dwin,9);
-        dwinSerial.write(Texture_Dwin,12);
-        dwinSerial.write(Variety_Dwin,12);
+        Serial2.write(Season_Dwin,9);
+        Serial2.write(Texture_Dwin,12);
+        Serial2.write(Variety_Dwin,12);
       // medium 111
       } else if (lightSwitchState == 1 && mediumSwitchState && heavySwitchState && button_selector_season == 0){
         unsigned char Season_Dwin[] = {0x5A,0xA5,0x06,0x82,0x20,0x00,0x44,0x52,0x59};
@@ -1607,9 +1772,9 @@ void loop() {
 
         nutrient_reco(nit_both,phos_both,potas_both);
 
-        dwinSerial.write(Season_Dwin,9);
-        dwinSerial.write(Texture_Dwin,13);
-        dwinSerial.write(Variety_Dwin,12);  
+        Serial2.write(Season_Dwin,9);
+        Serial2.write(Texture_Dwin,13);
+        Serial2.write(Variety_Dwin,12);  
       // heavy 011
       } else if (lightSwitchState == 0 && button_selector_season == 0){
         unsigned char Season_Dwin[] = {0x5A,0xA5,0x06,0x82,0x20,0x00,0x44,0x52,0x59};
@@ -1628,9 +1793,9 @@ void loop() {
 
         nutrient_reco(nit_both,phos_both,potas_both);
 
-        dwinSerial.write(Season_Dwin,9);
-        dwinSerial.write(Texture_Dwin,12);
-        dwinSerial.write(Variety_Dwin,12);
+        Serial2.write(Season_Dwin,9);
+        Serial2.write(Texture_Dwin,12);
+        Serial2.write(Variety_Dwin,12);
       }
     }
     splitting(nit_both,phos_both,potas_both);
@@ -1750,5 +1915,6 @@ void loop() {
     }
   }
   // logData();
+  // delay(10000);
   dwinListen();
 }
