@@ -485,6 +485,9 @@ void loop() {
         n_fil = 7.0;
         p_fil = 7.0;
         k_fil = 7.0;
+        Serial.println(n_fil);
+        Serial.println(p_fil);
+        Serial.println(k_fil);
     }
 
     else if (nitro_split1 > 1 && phos_split1 > 1 && potas_split1 < 1){
@@ -492,6 +495,9 @@ void loop() {
         n_fil = 8.0;
         p_fil = 10.0;
         k_fil = 0.0;
+        Serial.println(n_fil);
+        Serial.println(p_fil);
+        Serial.println(k_fil);
     }
 
     else if (nitro_split1 < 1 && phos_split1 > 1 && potas_split1 < 1){
@@ -499,33 +505,45 @@ void loop() {
         n_fil = 0.0;
         p_fil = 10.0;
         k_fil = 0.0;
+        Serial.println(n_fil);
+        Serial.println(p_fil);
+        Serial.println(k_fil);
     }
 
-    else if (nitro_split1 < 1 && phos_split1 < 1 && potas_split1 > 1){
+    else if (nitro_split1 < 1 && phos_split1 < 1 && potas_split1 > 1 ||nitro_split1 < 1 && phos_split1 > 1 && potas_split1 > 1){
         value_fil = "Muriate of Potash";
         n_fil = 0.0;
         p_fil = 0.0;
         k_fil = 30.0;
+        Serial.println(n_fil);
+        Serial.println(p_fil);
+        Serial.println(k_fil);
     }
 
         
         
     if (pH < 6.6) {
-        if (nitro_split1 > 1 && phos_split1 < 1 && potas_split1 < 1){
+        if (nitro_split1 > 1 && phos_split1 < 1 && potas_split1 < 1 || nitro_split1 > 1 && phos_split1 > 1 && potas_split1 < 1){
             value_fil = "Urea";
             n_fil = 23.0;
             p_fil = 0.0;
             k_fil = 0.0;
+            Serial.println(n_fil);
+            Serial.println(p_fil);
+            Serial.println(k_fil);
         }
 
     }
 
     else {
-        if (nitro_split1 > 1 && phos_split1 < 1 && potas_split1 < 1){
+        if (nitro_split1 > 1 && phos_split1 < 1 && potas_split1 < 1 || nitro_split1 > 1 && phos_split1 > 1 && potas_split1 < 1){
             value_fil = "Ammonium Sulfate";
             n_fil = 10.5;
             p_fil = 0.0;
             k_fil = 0.0;
+            Serial.println(n_fil);
+            Serial.println(p_fil);
+            Serial.println(k_fil);
         }
 
     }
