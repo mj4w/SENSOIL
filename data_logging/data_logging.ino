@@ -4,7 +4,7 @@
 #include <DS3231-RTC.h>
 
 File myFile;
-int pinCS = 10;
+int pinCS = 53;
 
 RTClib myRTC;
 DS3231 Clock;
@@ -25,7 +25,7 @@ void setup() {
 
   // Extract the year from the __DATE__ string
   String currentYear = String(__DATE__).substring(7);
-  String fileType = "Sensoil_Data_";
+  String fileType = "Data";
   // Create/Open File
   String fileName = currentYear + "data.csv";
   myFile = SD.open(fileName, FILE_WRITE);
@@ -41,16 +41,16 @@ void setup() {
   }
 
   // Reading the file
-  myFile = SD.open(fileName);
-  if (myFile) {
-    Serial.println("Read:");
-    while (myFile.available()) {
-      Serial.write(myFile.read());
-    }
-    myFile.close();
-  } else {
-    Serial.println("Error opening " + fileName);
-  }
+  // myFile = SD.open(fileName);
+  // if (myFile) {
+  //   Serial.println("Read:");
+  //   while (myFile.available()) {
+  //     Serial.write(myFile.read());
+  //   }
+  //   myFile.close();
+  // } else {
+  //   Serial.println("Error opening " + fileName);
+  // }
 }
 
 void loop() {
