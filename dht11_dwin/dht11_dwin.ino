@@ -1,8 +1,5 @@
 #include <SoftwareSerial.h>
 
-SoftwareSerial dwinSerial(19,18);
-SoftwareSerial mod(10,11); 
-
 unsigned char Buffer[9];
 #define nitro_value 0x51
 #define phos_value 0x52
@@ -23,18 +20,18 @@ float moisture, ec, pH, nitroValue, phosValue, potas;
 String season,texture,variety;
 void setup() {
   Serial.begin(9600);
-  dwinSerial.begin(9600);
-  mod.begin(4800);
+  Serial2.begin(9600);
+  Serial1.begin(4800);
 }
 
 void loop() {
-  Serial.print(dwinSerial.available());
+  Serial.print(Serial2.available());
   byte queryData[] = {0x01, 0x03, 0x00, 0x00, 0x00, 0x07, 0x04, 0x08};
   byte receivedData[19];
-  mod.write(queryData, sizeof(queryData));  // Send the query data to the NPK sensor
+  Serial1.write(queryData, sizeof(queryData));  // Send the query data to the NPK sensor
   delay(1000);  // Wait for 1 second
-  if (mod.available() >= sizeof(receivedData)) {  // Check if there are enough bytes available to read
-    mod.readBytes(receivedData, sizeof(receivedData));  // Read the received data into the receivedData array
+  if (Serial1.available() >= sizeof(receivedData)) {  // Check if there are enough bytes available to read
+    Serial1.readBytes(receivedData, sizeof(receivedData));  // Read the received data into the receivedData array
 
     // Parse and print the received data in decimal format
     unsigned int soilHumidity = (receivedData[3] << 8) | receivedData[4];
@@ -68,7 +65,7 @@ void loop() {
 
     delay(5000);
   }
-  while (dwinSerial.available()) {
+  while (Serial2.available()) {
     dwin();
   }
 
@@ -109,37 +106,37 @@ void Data_Arduino_to_Display() {
 
   Nitro[6] = highByte(n);
   Nitro[7] = lowByte(n);
-  dwinSerial.write(Nitro, 8);
+  Serial2.write(Nitro, 8);
   
   Phos[6] = highByte(ps);
   Phos[7] = lowByte(ps);
-  dwinSerial.write(Phos, 8);
+  Serial2.write(Phos, 8);
 
   Potas[6] = highByte(k);
   Potas[7] = lowByte(k);
-  dwinSerial.write(Potas, 8);
+  Serial2.write(Potas, 8);
   
   PH[6] = highByte(ph);
   PH[7] = lowByte(ph);
-  dwinSerial.write(PH, 8);
+  Serial2.write(PH, 8);
   
   EC[6] = highByte(e);
   EC[7] = lowByte(e);
-  dwinSerial.write(EC, 8);
+  Serial2.write(EC, 8);
   
   Moist[6] = highByte(m);
   Moist[7] = lowByte(m);
-  dwinSerial.write(Moist, 8);
+  Serial2.write(Moist, 8);
 
 
 
 }
 
 void dwin() {
-  if (dwinSerial.available()) {
+  if (Serial2.available()) {
     for (int i = 0; i <= 8; i++) //5A A5 06 83 55 00 01 00 01 frame sample received
     {
-      Buffer[i] = dwinSerial.read();
+      Buffer[i] = Serial2.read();
     }
   }
   delay(10);  // must include delay

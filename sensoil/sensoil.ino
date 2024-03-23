@@ -1,10 +1,12 @@
 #include <SoftwareSerial.h>
 #include <SD.h>
 #include <SPI.h>
-#include <DS3231-RTC.h>
 #include "Adafruit_Thermal.h"
 #include <EEPROM.h>
+#include "RTClib.h"
 
+
+char daysOfTheWeek[7][12] = {"Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"};
 
 const int chipSelect = 53; // Change this to the CS pin of your SD card module
 const int maxFiles = 50; // Maximum number of files, adjust as needed
@@ -12,15 +14,15 @@ unsigned long fileCounter = 0;
 String fileNames[maxFiles]; // Array to store file names
 File dataFile;
 // SWITCH
-#define WET_SELECTOR 23
-#define DRY_SELECTOR 22
+#define WET_SELECTOR 27
+#define DRY_SELECTOR 29
 
-#define INBRED_SELECTOR 24
-#define HYBRID_SELECTOR 25
+#define INBRED_SELECTOR 31
+#define HYBRID_SELECTOR 33
 
-#define LIGHT_SELECTOR 26 
-#define MEDIUM_SELECTOR 27
-#define HEAVY_SELECTOR 28
+#define LIGHT_SELECTOR 35
+#define MEDIUM_SELECTOR 37
+#define HEAVY_SELECTOR 39
 
 // DWIN LCD
 unsigned char Buffer[9];
@@ -34,7 +36,7 @@ unsigned char Buffer[9];
 #define nit_both_dwin 0x60
 #define phos_both_dwin 0x61
 #define potas_both_dwin 0x62
-
+int resetPin = 4;
 unsigned char Nitro_Dwin[8] = {0x5A, 0xA5, 0x05, 0x82, nitro_value_dwin, 0x00, 0x00, 0x00};
 unsigned char Phos_Dwin[8] = {0x5A, 0xA5, 0x05, 0x82, phos_value_dwin, 0x00, 0x00, 0x00};
 unsigned char Potas_Dwin[8] = {0x5A, 0xA5, 0x05, 0x82, potas_value_dwin, 0x00, 0x00, 0x00};
@@ -48,8 +50,7 @@ unsigned char Phos_Both_Dwin[8] = {0x5A, 0xA5, 0x05, 0x82, phos_both_dwin, 0x00,
 unsigned char Potas_Both_Dwin[8] = {0x5A, 0xA5, 0x05, 0x82, potas_both_dwin, 0x00, 0x00, 0x00};
 
 File myFile;
-RTClib myRTC;
-DS3231 Clock;
+RTC_DS1307 rtc;
 
 // Nutrient Reco
 float n_fil,p_fil,k_fil;
@@ -100,56 +101,51 @@ int button_selector_variety = 0;
 int button_selector_texture = 0;
 int buttonState = 0;
 int oldButtonState = LOW;
-
-const unsigned int PRINT_BUTTON = 8;
+const unsigned int PRINT_BUTTON = 10;
 String var1,var2,var3,var4,var5,var6,var7,var8,var9,var10,var11,var12,var13,var14,var15,var16,var17,var18,var19,var20;
-String month;
-int day;
-int year;
-
-void parseDate(String dateStr) {
-  // Assuming the date string format is "MMM DD YYYY"
-  char monthStr[4];
-  char dayStr[3];
-  char yearStr[5];
-
-  // Extract substrings from the date string
-  dateStr.substring(0, 3).toCharArray(monthStr, 4);
-  dateStr.substring(4, 6).toCharArray(dayStr, 3);
-  dateStr.substring(7, 11).toCharArray(yearStr, 5);
-
-  // Convert char arrays to strings
-  month = monthStrToNumber(monthStr);
-  day = atoi(dayStr);
-  year = atoi(yearStr);
-}
-
-String monthStrToNumber(const char* monthStr) {
-  // Convert three-letter month abbreviation to a zero-padded string
-  const char* months[] = {"Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"};
-  for (int i = 0; i < 12; ++i) {
-    if (strcmp(monthStr, months[i]) == 0) {
-      return String(i + 1, DEC);
-    }
+void restartDWIN(){
+  // Structure   {Initial} {len}  {Wo/p}(Add} {DataLen} {Command}
+  byte open[] = {0x5A, 0xA5, 0x06, 0x82, 0x04, 0x55, 0xAA, 0x5A, 0xA5};
+  Serial2.write(open, sizeof(open)); 
+  delay(50);
+  while (Serial2.available()) {
+      Serial2.read();
   }
-  return "00";  // Return "00" if month abbreviation is not recognized
 }
 
 void sendDateOverSerial() {
+
+  DateTime now = rtc.now();
+
+  Serial.print(now.year());
+  Serial.print('/');
+  Serial.print(now.month(), DEC);
+  Serial.print('/');
+  Serial.print(now.day(), DEC);
+  Serial.print(" (");
+  Serial.print(daysOfTheWeek[now.dayOfTheWeek()]);
+  Serial.print(") ");
+  Serial.print(now.hour(), DEC);
+  Serial.print(':');
+  Serial.print(now.minute(), DEC);
+  Serial.print(':');
+  Serial.print(now.second(), DEC);
+  Serial.println();
+
   unsigned char Month[8] = {0x5A, 0xA5, 0x05, 0x82, 0x36, 0x00, 0x00, 0x00};
   unsigned char Day[8] = {0x5A, 0xA5, 0x05, 0x82, 0x37, 0x00, 0x00, 0x00};
   unsigned char Year[8] = {0x5A, 0xA5, 0x05, 0x82, 0x38, 0x00, 0x00, 0x00};
 
-  Month[6] = highByte(month.toInt());
-  Month[7] = lowByte(month.toInt());
+  Month[6] = highByte(now.month());
+  Month[7] = lowByte(now.month());
   Serial2.write(Month, 8);
 
-  Day[6] = highByte(day);
-  Day[7] = lowByte(day);
+  Day[6] = highByte(now.day());
+  Day[7] = lowByte(now.day());
   Serial2.write(Day, 8);
 
-  Year[6] = highByte(year);
-  Year[7] = lowByte(year);
+  Year[6] = highByte(now.year());
+  Year[7] = lowByte(now.year());
   Serial2.write(Year, 8);
 }
 String extractNumber(String input) {
@@ -224,6 +220,7 @@ void formatSDCard() {
       // Delete the file
       if (SD.remove(fileName)) {
         Serial.println("File deleted successfully.");
+        resetEEPROMCounter();
       } else {
         Serial.println("Error deleting file.");
       }
@@ -249,15 +246,9 @@ String extractPrefix(String filename) {
 }
 
 void dwinListen(){
-
   while(true){
-    String dateStr = __DATE__;
-    
-    parseDate(dateStr);
-    // Serial.println("Month: " + String(month));
-    sendDateOverSerial();
+    DateTime now = rtc.now();
     // delay(5000);
-    switches();
     int startAdd = 00;
     int endAdd = 00;
     int dataVal = 0;
@@ -307,7 +298,6 @@ void dwinListen(){
     String extractedNumber18 = extractNumber(fileNames[17]);
     String extractedNumber19 = extractNumber(fileNames[18]);
     String extractedNumber20 = extractNumber(fileNames[19]);
-
     // Serial.println(fileNames[0]);
     unsigned char Data1[8] = {0x5A, 0xA5, 0x05, 0x82, 0x24, 0x00, 0x00, 0x00};
     int dataF1;
@@ -639,6 +629,7 @@ void dwinListen(){
 
     printData(prefix);
     Serial.println(prefix);
+    switches();
     while (Serial2.available()) {
         int inhex = Serial2.read();
         if( inhex == 90 || inhex == 165){
@@ -661,7 +652,7 @@ void dwinListen(){
           }
         }
         restartDWIN();
-        delay(700);
+        delay(500);
       address = String(startAdd)+String(endAdd);
       Serial.println("Address " + address + " Data " + String(dataVal));
       // if (address == "1656"){
@@ -673,7 +664,7 @@ void dwinListen(){
         case 185:
             filename = var1;
             readDataAndAssignVariables(var1);
-            delay(5000);
+            delay(100);
             break;
         case 186:
             filename = var2;
@@ -698,77 +689,77 @@ void dwinListen(){
         case 1816:
             filename = var6;
             readDataAndAssignVariables(var6);
-            delay(5000);
+            delay(100);
             break;
         case 1817:
             filename = var7;
             readDataAndAssignVariables(var7);
-            delay(5000);
+            delay(100);
             break;
         case 1818:
             filename = var8;
             readDataAndAssignVariables(var8);
-            delay(5000);
+            delay(100);
             break;
         case 1819:
             filename = var9;
             readDataAndAssignVariables(var9);
-            delay(5000);
+            delay(100);
             break;
         case 1820:
             filename = var10;
             readDataAndAssignVariables(var10);
-            delay(5000);
+            delay(100);
             break;
         case 1821:
             filename = var11;
             readDataAndAssignVariables(var11);
-            delay(5000);
+            delay(100);
             break;
         case 1822:
             filename = var12;
             readDataAndAssignVariables(var12);
-            delay(5000);
+            delay(100);
             break;
         case 1823:
             filename = var13;
             readDataAndAssignVariables(var13);
-            delay(5000);
+            delay(100);
             break;
         case 1824:
             filename = var14;
             readDataAndAssignVariables(var14);
-            delay(5000);
+            delay(100);
             break;
         case 1825:
             filename = var15;
             readDataAndAssignVariables(var15);
-            delay(5000);
+            delay(100);
             break;
         case 1832:
             filename = var16;
             readDataAndAssignVariables(var16);
-            delay(5000);
+            delay(100);
             break;
         case 1833:
             filename = var17;
             readDataAndAssignVariables(var17);
-            delay(5000);
+            delay(100);
             break;
         case 1834:
             filename = var18;
             readDataAndAssignVariables(var18);
-            delay(5000);
+            delay(100);
             break;
         case 1835:
             filename = var19;
             readDataAndAssignVariables(var19);
-            delay(5000);
+            delay(100);
             break;
         case 1836:
             filename = var20;
             readDataAndAssignVariables(var20);
-            delay(5000);
+            delay(100);
             break;
         case 510:
             deleteFile(filename);
@@ -779,7 +770,7 @@ void dwinListen(){
         case 530:
             npkSense();
             restartDWIN();
-            delay(1000);
+            delay(3000);
             break;
         // Format All
         case 520:
@@ -793,10 +784,8 @@ void dwinListen(){
             break;
       }
 
-    }
+    } 
   }
-
-
 }
 void readDataAndAssignVariables(String fileName) {
   File dataFile = SD.open(fileName);
@@ -812,9 +801,14 @@ void readDataAndAssignVariables(String fileName) {
       // delay(1000);
       // printAssignedValues(prefix);
     }
-    printAssignedValues(prefix);
-    printData(prefix);
-    delay(5000);
+    int i = 0;
+    while(i <= 5){
+      printAssignedValues(prefix);
+      printData(prefix);
+      i++;
+    }
+    // restartDWIN();
+
     // Close the file
     dataFile.close();
 
@@ -857,10 +851,21 @@ void parseAndAssignVariables(String dataLine) {
       phos_both = value.toInt();
     } else if (header == "K") {
       potas_both = value.toInt();
-
-    } else if (header == "1st Bag 1") {
+    } else if (header == "NLabel"){
+      nit_value = value;
+    } else if (header == "PLabel"){
+      phos_value = value;
+    } else if (header == "KLabel"){
+      potas_value = value;
+    } else if (header == "pHLabel"){
+      ph_value = value;
+    } else if (header == "ECLabel"){
+      soil_salinity_class = value;
+    } else if (header == "MoistureLabel"){
+      mois_value = value;
+    } else if (header == "1.1 Bag/s") {
       get_number1 = value.toInt();
-    } else if (header == "1st Kg 1"){
+    } else if (header == "1.1 Kg"){
       rounded_value1 = value.toInt();
     } else if (header == "1st N1"){
       n_fil_val = value.toInt();
@@ -868,9 +873,9 @@ void parseAndAssignVariables(String dataLine) {
       p_fil_val = value.toInt();
     } else if (header == "1st K1"){
       k_fil_val = value.toInt();
-    } else if (header == "1st Bag 2") {
+    } else if (header == "1.2 Bag/s") {
       get_number_second = value.toInt();
-    } else if (header == "1st Kg 2"){
+    } else if (header == "1.2 Kg"){
       rounded_value2 = value.toInt();
     } else if (header == "1st N2"){
       n_fil_val_second = value.toInt();
@@ -878,9 +883,9 @@ void parseAndAssignVariables(String dataLine) {
       p_fil_val_second = value.toInt();
     } else if (header == "1st K2"){
       k_fil_val_second = value.toInt();
-    } else if (header == "1st Bag 3") {
+    } else if (header == "1.3 Bag/s") {
       get_number_third = value.toInt();
-    } else if (header == "1st Kg 3"){
+    } else if (header == "1.3 Kg"){
       rounded_value3 = value.toInt();
     } else if (header == "1st N3"){
       n_fil_val_third = value.toInt();
@@ -889,9 +894,9 @@ void parseAndAssignVariables(String dataLine) {
     } else if (header == "1st K3"){
       k_fil_val_third = value.toInt();
 
-    } else if (header == "2nd Bag 1") {
+    } else if (header == "2.1 Bag/s") {
       get_number_split2 = value.toInt();
-    } else if (header == "2nd Kg 1"){
+    } else if (header == "2.1 Kg"){
       rounded_value4 = value.toInt();
     } else if (header == "2nd N1"){
       n_fil_val_split2 = value.toInt();
@@ -899,9 +904,9 @@ void parseAndAssignVariables(String dataLine) {
       p_fil_val_split2 = value.toInt();
     } else if (header == "2nd K1"){
       k_fil_val_split2 = value.toInt();
-    } else if (header == "2nd Bag 2") {
+    } else if (header == "2.1 Bag/s") {
       get_number_split2_second = value.toInt();
-    } else if (header == "2nd Kg 2"){
+    } else if (header == "2.1 Kg"){
       rounded_value5 = value.toInt();
     } else if (header == "2nd N2"){
       n_fil_val_split2_second = value.toInt();
@@ -910,9 +915,9 @@ void parseAndAssignVariables(String dataLine) {
     } else if (header == "2nd K2"){
       k_fil_val_split2_second = value.toInt();
       
-    } else if (header == "3rd Bag 1"){
+    } else if (header == "3.1 Bag/s"){
       get_number_split3 = value.toInt();
-    } else if (header == "3rd Kg 1"){
+    } else if (header == "3.1 Kg"){
       rounded_value6 = value.toInt();
     } else if (header == "3rd N1"){
       n_fil_val_split3 = value.toInt();
@@ -920,9 +925,9 @@ void parseAndAssignVariables(String dataLine) {
       p_fil_val_split3 = value.toInt();
     } else if (header == "3rd K1"){
       k_fil_val_split3 = value.toInt();
-    } else if (header == "3rd Bag 2"){
+    } else if (header == "3.2 Bag/s"){
       get_number_split3_second = value.toInt();
-    } else if (header == "3rd Kg 2"){
+    } else if (header == "3.2 Kg"){
       rounded_value7 = value.toInt();
     } else if (header == "3rd N2"){
       n_fil_val_split3_second = value.toInt();
@@ -936,8 +941,8 @@ void parseAndAssignVariables(String dataLine) {
   }
 }
 void printAssignedValues(String prefix) {
+  DateTime now = rtc.now();
   Serial.println("No: " + prefix);
-  Serial.println("DATE: "+ String(__DATE__));
   Serial.println("Season: " + season);
   Serial.println("Variety: " + variety);
   Serial.println("Texture: " + texture);
@@ -984,6 +989,10 @@ void retrieveCounterFromEEPROM() {
     saveCounterToEEPROM(); // Save the initial value to EEPROM
   }
 }
+void resetEEPROMCounter() {
+  fileCounter = 1;
+  saveCounterToEEPROM(); // Save the counter value of 1 to EEPROM
+}
 
 void saveCounterToEEPROM() {
   // Save the updated counter value to EEPROM
@@ -1003,12 +1012,16 @@ void logData() {
   Serial.println("Prefix: " + prefix);
   // Create a new file
   dataFile = SD.open(fileName, FILE_WRITE);
-  
+  DateTime now = rtc.now();
+
   // Check if the file opened successfully
   if (dataFile) {
     // Write data to the file
     dataFile.println("No,"+prefix);
-    dataFile.println("DATE,"+ String(__DATE__));
+    dataFile.println("Year,"+ String(now.year()));
+    dataFile.println("Month,"+ String(now.month()));
+    dataFile.println("Day,"+ String(now.day()));
+    dataFile.println("Week,"+ String(daysOfTheWeek[now.dayOfTheWeek()]));
     dataFile.println("Season," + String(season));
     dataFile.println("Variety," + String(variety));
     dataFile.println("Texture," + String(texture));
@@ -1019,7 +1032,15 @@ void logData() {
     dataFile.println("EC," + String(ec));
     dataFile.println("pH," + String(pH));
     dataFile.println("moisture," + String(moisture));
-
+    dataFile.println();
+    dataFile.println("LABEL");
+    dataFile.println("NLabel,"+ String(nit_value));
+    dataFile.println("PLabel,"+ String(phos_value));
+    dataFile.println("KLabel,"+ String(potas_value));
+    dataFile.println("pHLabel,"+ String(ph_value));
+    dataFile.println("ECLabel,"+ String(soil_salinity_class));
+    dataFile.println("MoistureLabel,"+ String(mois_value));
+    dataFile.println();
     dataFile.println("NUTRIENT RECOMMENDATION kg/ha");
 
     dataFile.println("N," + String(nit_both));
@@ -1028,24 +1049,24 @@ void logData() {
 
     dataFile.println("1st Topdressing (5-7 DAT)");
     dataFile.println();
-    dataFile.println("1st Bag 1, " + String(get_number1));
-    dataFile.println("1st Kg 1, " + String(rounded_value1));
+    dataFile.println("1.1 Bag/s, " + String(get_number1));
+    dataFile.println("1.1 Kg, " + String(rounded_value1));
     dataFile.println();
     dataFile.println("1st N1," + String(static_cast<int>(n_fil_val)));
     dataFile.println("1st P1," + String(static_cast<int>(p_fil_val)));
     dataFile.println("1st K1," + String(static_cast<int>(k_fil_val)));
 
     dataFile.println();
-    dataFile.println("1st Bag 2, " + String(get_number_second));
-    dataFile.println("1st Kg 2, " + String(rounded_value2));
+    dataFile.println("1.2 Bag/s, " + String(get_number_second));
+    dataFile.println("1.2 Kg, " + String(rounded_value2));
     dataFile.println();
     dataFile.println("1st N2, " + String(static_cast<int>(n_fil_val_second)));
     dataFile.println("1st P2, " + String(static_cast<int>(p_fil_val_second)));
     dataFile.println("1st K2, " + String(static_cast<int>(k_fil_val_second)));  
     
     dataFile.println();
-    dataFile.println("1st Bag 3, " + String(get_number_third));
-    dataFile.println("1st Kg 3, " + String(rounded_value3));
+    dataFile.println("1.3 Bag/s, " + String(get_number_third));
+    dataFile.println("1.3 Kg, " + String(rounded_value3));
     dataFile.println();
     dataFile.println("1st N3, " + String(static_cast<int>(n_fil_val_third)));
     dataFile.println("1st P3, " + String(static_cast<int>(p_fil_val_third)));
@@ -1054,16 +1075,16 @@ void logData() {
     dataFile.println();
     dataFile.println("2nd Topdressing (20-24 DAT)");
     dataFile.println();
-    dataFile.println("2nd Bag 1, " + String(get_number_split2));
-    dataFile.println("2nd Kg 1, " + String(rounded_value4));
+    dataFile.println("2.1 Bag/s, " + String(get_number_split2));
+    dataFile.println("2.1 Kg, " + String(rounded_value4));
     dataFile.println();
     dataFile.println("2nd N1, " + String(static_cast<int>(n_fil_val_split2)));
     dataFile.println("2nd P1, " + String(static_cast<int>(p_fil_val_split2)));
     dataFile.println("2nd K1, " + String(static_cast<int>(k_fil_val_split2)));  
 
     dataFile.println();
-    dataFile.println("2nd Bag 2, " + String(get_number_split2_second));
-    dataFile.println("2nd Kg 2, " + String(rounded_value5));
+    dataFile.println("2.2 Bag/s, " + String(get_number_split2_second));
+    dataFile.println("2.2 Kg, " + String(rounded_value5));
     dataFile.println();
     dataFile.println("2nd N2, " + String(static_cast<int>(n_fil_val_split2_second)));
     dataFile.println("2nd P2, " + String(static_cast<int>(p_fil_val_split2_second)));
@@ -1073,16 +1094,16 @@ void logData() {
     dataFile.println("3rd Topdressing (30-35 DAT)");
     dataFile.println();
 
-    dataFile.println("3rd Bag 1, " + String(get_number_split3));
-    dataFile.println("3rd Kg 1, " + String(rounded_value6));
+    dataFile.println("3.1 Bag/s, " + String(get_number_split3));
+    dataFile.println("3.1 Kg, " + String(rounded_value6));
     dataFile.println();
     dataFile.println("3rd N1, " + String(static_cast<int>(n_fil_val_split3)));
     dataFile.println("3rd P1, " + String(static_cast<int>(p_fil_val_split3)));
     dataFile.println("3rd K1, " + String(static_cast<int>(k_fil_val_split3)));  
 
     dataFile.println();
-    dataFile.println("3rd Bag 2, " + String(get_number_split3_second));
-    dataFile.println("3rd Kg 2, " + String(rounded_value7));
+    dataFile.println("3.2 Bag/s, " + String(get_number_split3_second));
+    dataFile.println("3.2 Kg, " + String(rounded_value7));
     dataFile.println();
     dataFile.println("3rd N2, " + String(static_cast<int>(n_fil_val_split3_second)));
     dataFile.println("3rd P2, " + String(static_cast<int>(p_fil_val_split3_second)));
@@ -1111,6 +1132,18 @@ void printWithSpace(Adafruit_Thermal &printer, const char *parameter, float valu
   printer.print(unit);
   printer.println();
 }
+
+void printWithText(Adafruit_Thermal &printer, const char *parameter, const char *value, const char *unit) {
+  printer.print(parameter);
+  int spaces = 15 - strlen(parameter); 
+  for (int i = 0; i < spaces; i++) {
+    printer.print(" ");
+  }
+  printer.print(value);
+  printer.print(unit);
+  printer.println();
+}
+
 
 void printWithString(Adafruit_Thermal &printer, const char *parameter, const String &value) {
   printer.print(parameter);
@@ -1167,11 +1200,11 @@ void phosphorus_(float pH, float phos){
     }
     else if (phos >= 6.1 && phos <= 10){
       phos_both = 40;
-      phos_value = "MODERATELY LOW";
+      phos_value = "MOD_LOW";
     }
     else if (phos >= 10.1 && phos <= 15){
       phos_both = 20;
-      phos_value = "MODERATELY HIGH";
+      phos_value = "MOD_HIGH";
     }
     else if (phos >= 15.1 && phos <= 100){
       phos_both = 7;
@@ -1179,7 +1212,7 @@ void phosphorus_(float pH, float phos){
     }
     else if (phos > 100){
       phos_both = 0;
-      phos_value = "VERY HIGH";
+      phos_value = "VERY_HIGH";
     }
   }
   //  EQUAL OR BELOW 5.5
@@ -1190,11 +1223,11 @@ void phosphorus_(float pH, float phos){
     }
     else if (phos >= 2.1 && phos <= 6){
       phos_both = 40;
-      phos_value = "MODERATELY LOW";
+      phos_value = "MOD_LOW";
     }
     else if (phos >= 6.1 && phos <= 10){
       phos_both = 20;
-      phos_value = "MODERATELY HIGH";
+      phos_value = "MOD_HIGH";
     }
     else if (phos >= 10.1 && phos <= 75){
       phos_both= 7;
@@ -1219,11 +1252,11 @@ void phosphorus_(float pH, float phos){
       Serial2.write(Phosphorus_Label,19); 
     }
     else if (phos >= 6.1 && phos <= 10){
-      unsigned char Phosphorus_Label[] = {0x5A,0xA5,0x10,0x82,0x21,0x00,0x2D,0x2D,0x2D,0x4D,0x4F,0x44,0x2D,0x4C,0x4F,0x57,0x2D,0x2D,0x2D};
+      unsigned char Phosphorus_Label[] = {0x5A,0xA5,0x10,0x82,0x21,0x00,0x2D,0x2D,0x2D,0x4D,0x4F,0x44,0x5F,0x4C,0x4F,0x57,0x2D,0x2D,0x2D};
       Serial2.write(Phosphorus_Label,19); 
     }
     else if (phos >= 10.1 && phos <= 15){
-      unsigned char Phosphorus_Label[] = {0x5A,0xA5,0x10,0x82,0x21,0x00,0x2D,0x2D,0x4D,0x4F,0x44,0x2D,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D};
+      unsigned char Phosphorus_Label[] = {0x5A,0xA5,0x10,0x82,0x21,0x00,0x2D,0x2D,0x4D,0x4F,0x44,0x5F,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D};
       Serial2.write(Phosphorus_Label,19);
     }
     else if (phos >= 15.1 && phos <= 100){
@@ -1231,7 +1264,7 @@ void phosphorus_(float pH, float phos){
       Serial2.write(Phosphorus_Label,19); 
     }
     else if (phos > 100){
-      unsigned char Phosphorus_Label[] = {0x5A,0xA5,0x10,0x82,0x21,0x00,0x2D,0x2D,0x56,0x45,0x52,0x59,0x2D,0x48,0x49,0x47,0x48,0x2D,0x2D};
+      unsigned char Phosphorus_Label[] = {0x5A,0xA5,0x10,0x82,0x21,0x00,0x2D,0x2D,0x56,0x45,0x52,0x59,0x5F,0x48,0x49,0x47,0x48,0x2D,0x2D};
       Serial2.write(Phosphorus_Label,19); 
     }
   }
@@ -1241,11 +1274,11 @@ void phosphorus_(float pH, float phos){
       Serial2.write(Phosphorus_Label,19); 
     }
     if (phos >= 2.1 && phos <= 6){
-      unsigned char Phosphorus_Label[] = {0x5A,0xA5,0x10,0x82,0x21,0x00,0x2D,0x2D,0x2D,0x4D,0x4F,0x44,0x2D,0x4C,0x4F,0x57,0x2D,0x2D,0x2D};
+      unsigned char Phosphorus_Label[] = {0x5A,0xA5,0x10,0x82,0x21,0x00,0x2D,0x2D,0x2D,0x4D,0x4F,0x44,0x5F,0x4C,0x4F,0x57,0x2D,0x2D,0x2D};
       Serial2.write(Phosphorus_Label,19); 
     }
     if (phos >= 6.1 && phos <= 10){
-      unsigned char Phosphorus_Label[] = {0x5A,0xA5,0x10,0x82,0x21,0x00,0x2D,0x2D,0x4D,0x4F,0x44,0x2D,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D};
+      unsigned char Phosphorus_Label[] = {0x5A,0xA5,0x10,0x82,0x21,0x00,0x2D,0x2D,0x4D,0x4F,0x44,0x5F,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D};
       Serial2.write(Phosphorus_Label,19);
     }
     if (phos >= 10.1 && phos <= 75){
@@ -1253,7 +1286,7 @@ void phosphorus_(float pH, float phos){
       Serial2.write(Phosphorus_Label,19);  
     }
     else if (phos > 75) {
-      unsigned char Phosphorus_Label[] = {0x5A,0xA5,0x10,0x82,0x21,0x00,0x2D,0x2D,0x56,0x45,0x52,0x59,0x2D,0x48,0x49,0x47,0x48,0x2D,0x2D};
+      unsigned char Phosphorus_Label[] = {0x5A,0xA5,0x10,0x82,0x21,0x00,0x2D,0x2D,0x56,0x45,0x52,0x59,0x5F,0x48,0x49,0x47,0x48,0x2D,0x2D};
       Serial2.write(Phosphorus_Label,19); 
     }
   }
@@ -1268,11 +1301,11 @@ void potassium_(float potas){
   }
   else if (potas >= 0.191 && potas <= 0.290){
     potas_both = 45;
-    potas_value = "MODERATELY LOW";
+    potas_value = "MOD_LOW";
   }
   else if (potas >= 0.291 && potas <= 0.385){
     potas_both = 30;
-    potas_value = "MODERATELY HIGH";
+    potas_value = "MOD_HIGH";
   }
   else if (potas >= 0.386 && potas <= 1.000){
     potas_both = 7;
@@ -1280,7 +1313,7 @@ void potassium_(float potas){
   }
   else if (potas >= 1.000){
     potas_both = 0;
-    potas_value = "VERY HIGH";
+    potas_value = "VERY_HIGH";
   }
   Serial.print("Potassium: ");
   Serial.print(potas);
@@ -1295,11 +1328,11 @@ void potassium_(float potas){
     Serial2.write(Potassium_Label,19); 
   }
   else if (potas >= 0.191 && potas <= 0.290){
-    unsigned char Potassium_Label[] = {0x5A,0xA5,0x10,0x82,0x23,0x00,0x2D,0x2D,0x2D,0x4D,0x4F,0x44,0x2D,0x4C,0x4F,0x57,0x2D,0x2D,0x2D};
+    unsigned char Potassium_Label[] = {0x5A,0xA5,0x10,0x82,0x23,0x00,0x2D,0x2D,0x2D,0x4D,0x4F,0x44,0x5F,0x4C,0x4F,0x57,0x2D,0x2D,0x2D};
     Serial2.write(Potassium_Label,19); 
   }
   else if (potas >= 0.291 && potas <= 0.385){
-    unsigned char Potassium_Label[] = {0x5A,0xA5,0x10,0x82,0x23,0x00,0x2D,0x2D,0x4D,0x4F,0x44,0x2D,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D};
+    unsigned char Potassium_Label[] = {0x5A,0xA5,0x10,0x82,0x23,0x00,0x2D,0x2D,0x4D,0x4F,0x44,0x5F,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D};
     Serial2.write(Potassium_Label,19);
   }
   else if (potas >= 0.386 && potas <= 1.000){
@@ -1307,7 +1340,7 @@ void potassium_(float potas){
     Serial2.write(Potassium_Label,19); 
   }
   else if (potas >= 1.000){
-    unsigned char Potassium_Label[] = {0x5A,0xA5,0x10,0x82,0x23,0x00,0x2D,0x2D,0x56,0x45,0x52,0x59,0x2D,0x48,0x49,0x47,0x48,0x2D,0x2D};
+    unsigned char Potassium_Label[] = {0x5A,0xA5,0x10,0x82,0x23,0x00,0x2D,0x2D,0x56,0x45,0x52,0x59,0x5F,0x48,0x49,0x47,0x48,0x2D,0x2D};
     Serial2.write(Potassium_Label,19); 
   }
 }
@@ -1349,19 +1382,19 @@ void soil_ph(float pH){
 void electrical_conductivity(float ec){
   // ec
   if (ec >= 0 && ec <= 2) {
-    soil_salinity_class = "Non Saline";
+    soil_salinity_class = "VERY_LOW";
   }
   else if (ec > 2.1 && ec <= 4) {
-    soil_salinity_class = "Slightly Saline";
+    soil_salinity_class = "LOW";
   } 
   else if (ec > 4.1 && ec <= 8) {
-    soil_salinity_class = "Moderately Saline";
+    soil_salinity_class = "MODERATE";
   }
   else if (ec > 8.1 &&  ec < 16) {
-    soil_salinity_class = "Severely Saline";
+    soil_salinity_class = "HIGH";
   }
   else if (ec > 16){
-    soil_salinity_class = "Very Severely Saline";
+    soil_salinity_class = "VERY_HIGH";
   }
   Serial.print("EC: ");
   Serial.print(ec);
@@ -1372,23 +1405,23 @@ void electrical_conductivity(float ec){
   Serial.println();
 
   if (ec >= 0 && ec <= 2) {
-    unsigned char Saline[] = {0x5A,0xA5,0x10,0x82,0x16,0x00,0x2D,0x2D,0x4E,0x4F,0x4E,0x53,0x41,0x4C,0x49,0x4E,0x45,0x2D,0x2D};
+    unsigned char Saline[] = {0x5A,0xA5,0x10,0x82,0x16,0x00,0x2D,0x2D,0x56,0x45,0x52,0x59,0x5F,0x4C,0x4F,0x57};
     Serial2.write(Saline,19);
   }
   else if (ec > 2.1 && ec <= 4) {
-    unsigned char Saline[] = {0x5A,0xA5,0x10,0x82,0x16,0x00,0x2D,0x2D,0x53,0x4C,0x49,0x47,0x48,0x54,0x4C,0x59,0x2D,0x2D,0x2D};
+    unsigned char Saline[] = {0x5A,0xA5,0x10,0x82,0x16,0x00,0x2D,0x2D,0x2D,0x2D,0x2D,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D,0x2D};
     Serial2.write(Saline,19);
   } 
   else if (ec > 4.1 && ec <= 8) {
-    unsigned char Saline[] = {0x5A,0xA5,0x10,0x82,0x16,0x00,0x2D,0x4D,0x4F,0x44,0x45,0x52,0x41,0x54,0x45,0x4C,0x59,0x2D,0x2D};
+    unsigned char Saline[] = {0x5A,0xA5,0x10,0x82,0x16,0x00,0x2D,0x2D,0x4D,0x4F,0x44,0x45,0x52,0x41,0x54,0x45,0x2D,0x2D,0x2D};
     Serial2.write(Saline,19);
   }
   else if (ec > 8.1 &&  ec < 16) {
-    unsigned char Saline[] = {0x5A,0xA5,0x10,0x82,0x16,0x00,0x2D,0x2D,0x53,0x45,0x56,0x45,0x52,0x45,0x4C,0x59,0x2D,0x2D,0x2D};
+    unsigned char Saline[] = {0x5A,0xA5,0x10,0x82,0x16,0x00,0x2D,0x2D,0x2D,0x2D,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D,0x2D,0x2D};
     Serial2.write(Saline,19);
   }
   else if (ec > 16){
-    unsigned char Saline[] = {0x5A,0xA5,0x10,0x82,0x16,0x00,0x56,0x45,0x52,0x59,0x53,0x45,0x56,0x45,0x52,0x45,0x4C,0x59,0x2D};
+    unsigned char Saline[] = {0x5A,0xA5,0x10,0x82,0x16,0x00,0x2D,0x2D,0x56,0x45,0x52,0x59,0x5F,0x48,0x49,0x47,0x48,0x2D,0x2D};
     Serial2.write(Saline,19);
   }
 
@@ -1396,10 +1429,12 @@ void electrical_conductivity(float ec){
 void moisture_(float moisture){
     // Moisture
   if (moisture <= 15){
-    mois_value = "Very Low Moisture"; 
+    mois_value = "LOW"; 
   }
-  else if (moisture > 15){
-    mois_value = "Moist Soil";
+  else if (moisture >= 60 && moisture <= 20){
+    mois_value = "SUFFICIENT";
+  } else {
+    mois_value = "HIGH";
   }
   Serial.print("Moisture: ");
   Serial.print(moisture);
@@ -1408,12 +1443,15 @@ void moisture_(float moisture){
   Serial.print("Moisture Value: ");
   Serial.print(mois_value);
   Serial.println();
-  if (moisture <= 15){
-    unsigned char Moisture[] = {0x5A,0xA5,0x10,0x82,0x17,0x00,0x2D,0x2D,0x2D,0x56,0x45,0x52,0x59,0x4C,0x4F,0x57,0x2D,0x2D,0x2D};
+  if (moisture <= 19){
+    unsigned char Moisture[] = {0x5A,0xA5,0x10,0x82,0x17,0x00,0x2D,0x2D,0x2D,0x2D,0x2D,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D,0x2D};
     Serial2.write(Moisture,19);
   }
-  else if (moisture > 15){
-    unsigned char Moisture[] = {0x5A,0xA5,0x10,0x82,0x17,0x00,0x2D,0x2D,0x2D,0x4D,0x4F,0x49,0x53,0x54,0x2D,0x2D,0x2D,0x2D,0x2D};
+  else if (moisture >= 60 && moisture <= 20){
+    unsigned char Moisture[] = {0x5A,0xA5,0x10,0x82,0x17,0x00,0x2D,0x53,0x55,0x46,0x46,0x49,0x43,0x49,0x45,0x4E,0x54,0x2D,0x2D};
+    Serial2.write(Moisture,19);
+  } else {
+    unsigned char Moisture[] = {0x5A,0xA5,0x10,0x82,0x17,0x00,0x2D,0x2D,0x2D,0x2D,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D,0x2D,0x2D};
     Serial2.write(Moisture,19);
   }
 }
@@ -1422,27 +1460,27 @@ void moisture_(float moisture){
 // light nitro -> WET SEASON
 void hybrid_nitrogen_lws(float nitro){
 
-  if (nitro <= 2.0) {
+  if (nitro < 2.00) {
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x2D,0x2D,0x2D,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D,0x2D};
     Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 100;
     nit_value = "LOW";
 
   }
-  else if (nitro >= 2.1 && nitro <= 3.5) {
-    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x2D,0x4D,0x4F,0x44,0x2D,0x4C,0x4F,0x57,0x2D,0x2D,0x2D};
+  else if (nitro >= 2.00 && nitro <= 3.59) {
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x2D,0x4D,0x4F,0x44,0x5F,0x4C,0x4F,0x57,0x2D,0x2D,0x2D};
     Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 80;
-    nit_value = "MODERATELY LOW";
+    nit_value = "MOD_LOW";
 
   }
-  else if (nitro >= 3.6 && nitro <= 4.5) {
-    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x4D,0x4F,0x44,0x2D,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D};
+  else if (nitro >= 3.60 && nitro <= 4.60) {
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x4D,0x4F,0x44,0x5F,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D};
     Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 60;
-    nit_value = "MODERATELY HIGH";
+    nit_value = "MOD_HIGH";
   }
-  else if (nitro >= 4.6){
+  else if (nitro >= 4.611){
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x2D,0x2D,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D,0x2D,0x2D};
     Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 7;
@@ -1460,27 +1498,27 @@ void hybrid_nitrogen_lws(float nitro){
 // medium nitro -> WET SEASON
 void hybrid_nitrogen_mws(float nitro){
 
-  if (nitro <= 2.0) {
+  if (nitro < 2.00) {
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x2D,0x2D,0x2D,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D,0x2D};
     Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 90;
     nit_value = "LOW";
 
   }
-  else if (nitro >= 2.1 && nitro <= 3.5) {
-    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x2D,0x4D,0x4F,0x44,0x2D,0x4C,0x4F,0x57,0x2D,0x2D,0x2D};
+  else if (nitro >= 2.00 && nitro <= 3.59) {
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x2D,0x4D,0x4F,0x44,0x5F,0x4C,0x4F,0x57,0x2D,0x2D,0x2D};
     Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 70;
-    nit_value = "MODERATELY LOW";
+    nit_value = "MOD_LOW";
 
   }
-  else if (nitro >= 3.6 && nitro <= 4.5) {
-    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x4D,0x4F,0x44,0x2D,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D};
+  else if (nitro >= 3.60 && nitro <= 4.60) {
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x4D,0x4F,0x44,0x5F,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D};
     Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 50;
-    nit_value = "MODERATELY HIGH";
+    nit_value = "MOD_HIGH";
   }
-  else if (nitro >= 4.6){
+  else if (nitro >= 4.61){
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x2D,0x2D,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D,0x2D,0x2D};
     Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 7;
@@ -1498,27 +1536,27 @@ void hybrid_nitrogen_mws(float nitro){
 // heavy nitro -> WET SEASON
 void hybrid_nitrogen_hws(float nitro){
 
-  if (nitro <= 2.0) {
+  if (nitro < 2.00) {
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x2D,0x2D,0x2D,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D,0x2D};
     Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 80;
     nit_value = "LOW";
 
   }
-  else if (nitro >= 2.1 && nitro <= 3.5) {
-    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x2D,0x4D,0x4F,0x44,0x2D,0x4C,0x4F,0x57,0x2D,0x2D,0x2D};
+  else if (nitro >= 2.00 && nitro <= 3.59) {
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x2D,0x4D,0x4F,0x44,0x5F,0x4C,0x4F,0x57,0x2D,0x2D,0x2D};
     Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 60;
-    nit_value = "MODERATELY LOW";
+    nit_value = "MOD_LOW";
 
   }
-  else if (nitro >= 3.6 && nitro <= 4.5) {
-    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x4D,0x4F,0x44,0x2D,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D};
+  else if (nitro >= 3.60 && nitro <= 4.60) {
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x4D,0x4F,0x44,0x5F,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D};
     Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 40;
-    nit_value = "MODERATELY HIGH";
+    nit_value = "MOD_HIGH";
   }
-  else if (nitro >= 4.6){
+  else if (nitro >= 4.61){
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x2D,0x2D,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D,0x2D,0x2D};
     Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 7;
@@ -1536,27 +1574,27 @@ void hybrid_nitrogen_hws(float nitro){
 // DRY SEASON
 void hybrid_nitrogen_lds(float nitro){
 
-  if (nitro <= 2.0) {
+  if (nitro < 2.00) {
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x2D,0x2D,0x2D,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D,0x2D};
     Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 120;
     nit_value = "LOW";
 
   }
-  else if (nitro >= 2.1 && nitro <= 3.5) {
-    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x2D,0x4D,0x4F,0x44,0x2D,0x4C,0x4F,0x57,0x2D,0x2D,0x2D};
+  else if (nitro >= 2.00 && nitro <= 3.59) {
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x2D,0x4D,0x4F,0x44,0x5F,0x4C,0x4F,0x57,0x2D,0x2D,0x2D};
     Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 100;
-    nit_value = "MODERATELY LOW";
+    nit_value = "MOD_LOW";
 
   }
-  else if (nitro >= 3.6 && nitro <= 4.5) {
-    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x4D,0x4F,0x44,0x2D,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D};
+  else if (nitro >= 3.60 && nitro <= 4.60) {
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x4D,0x4F,0x44,0x5F,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D};
     Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 80;
-    nit_value = "MODERATELY HIGH";
+    nit_value = "MOD_HIGH";
   }
-  else if (nitro >= 4.6){
+  else if (nitro >= 4.61){
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x2D,0x2D,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D,0x2D,0x2D};
     Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 7;
@@ -1575,26 +1613,26 @@ void hybrid_nitrogen_lds(float nitro){
 // medium nitro -> DRY SEASON
 void hybrid_nitrogen_mds(float nitro){
 
-  if (nitro <= 2.0) {
+  if (nitro < 2.00) {
     nit_both = 110;
     nit_value = "LOW";
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x2D,0x2D,0x2D,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D,0x2D};
     Serial2.write(Nitrogen_Label_Dwin,19);  
   }
-  else if (nitro >= 2.1 && nitro <= 3.5) {
-    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x2D,0x4D,0x4F,0x44,0x2D,0x4C,0x4F,0x57,0x2D,0x2D,0x2D};
+  else if (nitro >= 2.00 && nitro <= 3.59) {
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x2D,0x4D,0x4F,0x44,0x5F,0x4C,0x4F,0x57,0x2D,0x2D,0x2D};
     Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 90;
-    nit_value = "MODERATELY LOW";
+    nit_value = "MOD_LOW";
 
   }
-  else if (nitro >= 3.6 && nitro <= 4.5) {
-    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x4D,0x4F,0x44,0x2D,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D};
+  else if (nitro >= 3.60 && nitro <= 4.60) {
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x4D,0x4F,0x44,0x5F,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D};
     Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 70;
-    nit_value = "MODERATELY HIGH";
+    nit_value = "MOD_HIGH";
   }
-  else if (nitro >= 4.6){
+  else if (nitro >= 4.61){
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x2D,0x2D,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D,0x2D,0x2D};
     Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 7;
@@ -1612,27 +1650,27 @@ void hybrid_nitrogen_mds(float nitro){
 // heavy nitro -> DRY SEASON
 void hybrid_nitrogen_hds(float nitro){
 
-  if (nitro <= 2.0) {
+  if (nitro < 2.00) {
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x2D,0x2D,0x2D,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D,0x2D};
     Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 100;
     nit_value = "LOW";
 
   }
-  else if (nitro >= 2.1 && nitro <= 3.5) {
-    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x2D,0x4D,0x4F,0x44,0x2D,0x4C,0x4F,0x57,0x2D,0x2D,0x2D};
+  else if (nitro >= 2.00 && nitro <= 3.59) {
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x2D,0x4D,0x4F,0x44,0x5F,0x4C,0x4F,0x57,0x2D,0x2D,0x2D};
     Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 80;
-    nit_value = "MODERATELY LOW";
+    nit_value = "MOD_LOW";
 
   }
-  else if (nitro >= 3.6 && nitro <= 4.5) {
-    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x4D,0x4F,0x44,0x2D,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D};
+  else if (nitro >= 3.60 && nitro <= 4.60) {
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x4D,0x4F,0x44,0x5F,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D};
     Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 60;
-    nit_value = "MODERATELY HIGH";
+    nit_value = "MOD_HIGH";
   }
-  else if (nitro >= 4.6){
+  else if (nitro >= 4.61){
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x2D,0x2D,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D,0x2D,0x2D};
     Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 7;
@@ -1652,27 +1690,27 @@ void hybrid_nitrogen_hds(float nitro){
 // WET SEASON
 void inbred_nitrogen_lws(float nitro){
 
-  if (nitro <= 2.0) {
+  if (nitro < 2.00) {
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x2D,0x2D,0x2D,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D,0x2D};
     Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 80;
     nit_value = "LOW";
 
   }
-  else if (nitro >= 2.1 && nitro <= 3.5) {
-    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x2D,0x4D,0x4F,0x44,0x2D,0x4C,0x4F,0x57,0x2D,0x2D,0x2D};
+  else if (nitro >= 2.00 && nitro <= 3.59) {
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x2D,0x4D,0x4F,0x44,0x5F,0x4C,0x4F,0x57,0x2D,0x2D,0x2D};
     Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 60;
-    nit_value = "MODERATELY LOW";
+    nit_value = "MOD_LOW";
 
   }
-  else if (nitro >= 3.6 && nitro <= 4.5) {
-    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x4D,0x4F,0x44,0x2D,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D};
+  else if (nitro >= 3.60 && nitro <= 4.60) {
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x4D,0x4F,0x44,0x5F,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D};
     Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 40;
-    nit_value = "MODERATELY HIGH";
+    nit_value = "MOD_HIGH";
   }
-  else if (nitro >= 4.6){
+  else if (nitro >= 4.61){
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x2D,0x2D,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D,0x2D,0x2D};
     Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 7;
@@ -1690,27 +1728,27 @@ void inbred_nitrogen_lws(float nitro){
 // medium nitro -> WET SEASON
 void inbred_nitrogen_mws(float nitro){
 
-  if (nitro <= 2.0) {
+  if (nitro < 2.00) {
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x2D,0x2D,0x2D,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D,0x2D};
     Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 70;
     nit_value = "LOW";
 
   }
-  else if (nitro >= 2.1 && nitro <= 3.5) {
-    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x2D,0x4D,0x4F,0x44,0x2D,0x4C,0x4F,0x57,0x2D,0x2D,0x2D};
+  else if (nitro >= 2.00 && nitro <= 3.59) {
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x2D,0x4D,0x4F,0x44,0x5F,0x4C,0x4F,0x57,0x2D,0x2D,0x2D};
     Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 50;
-    nit_value = "MODERATELY LOW";
+    nit_value = "MOD_LOW";
 
   }
-  else if (nitro >= 3.6 && nitro <= 4.5) {
-    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x4D,0x4F,0x44,0x2D,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D};
+  else if (nitro >= 3.60 && nitro <= 4.60) {
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x4D,0x4F,0x44,0x5F,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D};
     Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 30;
-    nit_value = "MODERATELY HIGH";
+    nit_value = "MOD_HIGH";
   }
-  else if (nitro >= 4.6){
+  else if (nitro >= 4.61){
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x2D,0x2D,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D,0x2D,0x2D};
     Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 7;
@@ -1728,27 +1766,27 @@ void inbred_nitrogen_mws(float nitro){
 // heavy nitro -> WET SEASON
 void inbred_nitrogen_hws(float nitro){
 
-  if (nitro <= 2.0) {
+  if (nitro < 2.00) {
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x2D,0x2D,0x2D,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D,0x2D};
     Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 60;
     nit_value = "LOW";
 
   }
-  else if (nitro >= 2.1 && nitro <= 3.5) {
-    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x2D,0x4D,0x4F,0x44,0x2D,0x4C,0x4F,0x57,0x2D,0x2D,0x2D};
+  else if (nitro >= 2.00 && nitro <= 3.59) {
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x2D,0x4D,0x4F,0x44,0x5F,0x4C,0x4F,0x57,0x2D,0x2D,0x2D};
     Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 40;
-    nit_value = "MODERATELY LOW";
+    nit_value = "MOD_LOW";
 
   }
-  else if (nitro >= 3.6 && nitro <= 4.5) {
-    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x4D,0x4F,0x44,0x2D,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D};
+  else if (nitro >= 3.60 && nitro <= 4.60) {
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x4D,0x4F,0x44,0x5F,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D};
     Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 20;
-    nit_value = "MODERATELY HIGH";
+    nit_value = "MOD_HIGH";
   }
-  else if (nitro >= 4.6){
+  else if (nitro >= 4.61){
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x2D,0x2D,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D,0x2D,0x2D};
     Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 7;
@@ -1768,27 +1806,27 @@ void inbred_nitrogen_hws(float nitro){
 // DRY SEASON
 void inbred_nitrogen_lds(float nitro){
 
-  if (nitro <= 2.0) {
+  if (nitro < 2.00) {
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x2D,0x2D,0x2D,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D,0x2D};
     Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 90;
     nit_value = "LOW";
 
   }
-  else if (nitro >= 2.1 && nitro <= 3.5) {
-    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x2D,0x4D,0x4F,0x44,0x2D,0x4C,0x4F,0x57,0x2D,0x2D,0x2D};
+  else if (nitro >= 2.00 && nitro <= 3.59) {
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x2D,0x4D,0x4F,0x44,0x5F,0x4C,0x4F,0x57,0x2D,0x2D,0x2D};
     Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 70;
-    nit_value = "MODERATELY LOW";
+    nit_value = "MOD_LOW";
 
   }
-  else if (nitro >= 3.6 && nitro <= 4.5) {
-    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x4D,0x4F,0x44,0x2D,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D};
+  else if (nitro >= 3.60 && nitro <= 4.60) {
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x4D,0x4F,0x44,0x5F,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D};
     Serial2.write(Nitrogen_Label_Dwin,19);
     nit_both = 50;
-    nit_value = "MODERATELY HIGH";
+    nit_value = "MOD_HIGH";
   }
-  else if (nitro >= 4.6){
+  else if (nitro >= 4.61){
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x2D,0x2D,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D,0x2D,0x2D};
     Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 7;
@@ -1806,27 +1844,27 @@ void inbred_nitrogen_lds(float nitro){
 // medium nitro -> DRY SEASON
 void inbred_nitrogen_mds(float nitro){
 
-  if (nitro <= 2.0) {
+  if (nitro < 2.00) {
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x2D,0x2D,0x2D,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D,0x2D};
     Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 80;
     nit_value = "LOW";
 
   }
-  else if (nitro >= 2.1 && nitro <= 3.5) {
-    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x2D,0x4D,0x4F,0x44,0x2D,0x4C,0x4F,0x57,0x2D,0x2D,0x2D};
+  else if (nitro >= 2.00 && nitro <= 3.59) {
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x2D,0x4D,0x4F,0x44,0x5F,0x4C,0x4F,0x57,0x2D,0x2D,0x2D};
     Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 60;
-    nit_value = "MODERATELY LOW";
+    nit_value = "MOD_LOW";
 
   }
-  else if (nitro >= 3.6 && nitro <= 4.5) {
-    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x4D,0x4F,0x44,0x2D,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D};
+  else if (nitro >= 3.60 && nitro <= 4.60) {
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x4D,0x4F,0x44,0x5F,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D};
     Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 40;
-    nit_value = "MODERATELY HIGH";
+    nit_value = "MOD_HIGH";
   }
-  else if (nitro >= 4.6){
+  else if (nitro >= 4.61){
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x2D,0x2D,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D,0x2D,0x2D};
     Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 7;
@@ -1844,27 +1882,27 @@ void inbred_nitrogen_mds(float nitro){
 // heavy nitro -> DRY SEASON
 void inbred_nitrogen_hds(float nitro){
 
-  if (nitro <= 2.0) {
+  if (nitro < 2.00) {
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x2D,0x2D,0x2D,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D,0x2D};
     Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 70;
     nit_value = "LOW";
 
   }
-  else if (nitro >= 2.1 && nitro <= 3.5) {
-    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x2D,0x4D,0x4F,0x44,0x2D,0x4C,0x4F,0x57,0x2D,0x2D,0x2D};
+  else if (nitro >= 2.00 && nitro <= 3.59) {
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x2D,0x4D,0x4F,0x44,0x5F,0x4C,0x4F,0x57,0x2D,0x2D,0x2D};
     Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 50;
-    nit_value = "MODERATELY LOW";
+    nit_value = "MOD_LOW";
 
   }
-  else if (nitro >= 3.6 && nitro <= 4.5) {
-    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x4D,0x4F,0x44,0x2D,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D};
+  else if (nitro >= 3.60 && nitro <= 4.60) {
+    unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x4D,0x4F,0x44,0x5F,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D};
     Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 30;
-    nit_value = "MODERATELY HIGH";
+    nit_value = "MOD_HIGH";
   }
-  else if (nitro >= 4.6){
+  else if (nitro >= 4.61){
     unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x2D,0x2D,0x48,0x49,0x47,0x48,0x2D,0x2D,0x2D,0x2D,0x2D};
     Serial2.write(Nitrogen_Label_Dwin,19); 
     nit_both = 7;
@@ -2348,12 +2386,9 @@ void splitting(int nit_both,int phos_both,int potas_both){
         }
 
     }
-    // Serial.println(n_fil_second);
-    // Serial.println(p_fil_second);
-    // Serial.println(k_fil_second);
-    // Serial.println(result_minusn1);
-    // Serial.println(result_minusp1);
-    // Serial.println(result_minusk1);
+    Serial.println(n_fil_val_second);
+    Serial.println(p_fil_val_second);
+    Serial.println(k_fil_val_second);
     float result_divide_secondn1 = (n_fil_second != 0.0) ? (result_minusn1 / n_fil_second) : 0.0;;
     float result_divide_secondp1 = (p_fil_second != 0.0) ? (result_minusp1 / p_fil_second) : 0.0;
     float result_divide_secondk1 = (k_fil_second != 0.0) ? (result_minusk1 / k_fil_second) : 0.0;
@@ -2750,11 +2785,15 @@ void splitting(int nit_both,int phos_both,int potas_both){
         Serial2.write(K_filSplit2, 8);
       }
   }
+  
   float result_divide_splitn1 = (n_fil_split2 != 0.0) ? (nitro_split2 / n_fil_split2) : 0.0;;
   float result_divide_splitp1 = (p_fil_split2 != 0.0) ? (phos_split2 / p_fil_split2) : 0.0;
   float result_divide_splitk1 = (k_fil_split2 != 0.0) ? (potas_split2 / k_fil_split2) : 0.0;
-
+  Serial.println(result_divide_splitn1);
+  Serial.println(result_divide_splitp1);
+  Serial.println(result_divide_splitk1);
   float lowest_value_split2 = findLowestNonZero(result_divide_splitn1, result_divide_splitp1, result_divide_splitk1);
+
   int low_split2 = static_cast<int>(lowest_value_split2);
   float decimal_part_split2 = lowest_value_split2 - static_cast<float>(low_split2);
   int decimal_as_int4 = static_cast<int>((decimal_part_split2 * 100.0));
@@ -3394,7 +3433,6 @@ void setup() {
   pinMode(MEDIUM_SELECTOR, INPUT_PULLUP);
   pinMode(HEAVY_SELECTOR, INPUT_PULLUP);
   pinMode(PRINT_BUTTON, INPUT_PULLUP);
-
   // Serial initialization
   Serial.begin(9600);
   Serial1.begin(4800);
@@ -3412,18 +3450,35 @@ void setup() {
   }
   Serial.println("card initialized.");
   
+  if (!rtc.begin()) {
+    Serial.println("Couldn't find RTC");
+    Serial.flush();
+    while (1) delay(10);
+  }
 
+  if (!rtc.isrunning()) {
+    Serial.println("RTC is NOT running, let's set the time!");
+    // When time needs to be set on a new device, or after a power loss, the
+    // following line sets the RTC to the date & time this sketch was compiled
+    rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+    // This line sets the RTC with an explicit date & time, for example to set
+    // January 21, 2014 at 3am you would call:
+    // rtc.adjust(DateTime(2024, 3, 23, 7, 5, 0));
+  }
+  // When time needs to be re-set on a previously configured device, the
+  // following line sets the RTC to the date & time this sketch was compiled
+  // rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+  // This line sets the RTC with an explicit date & time, for example to set
+  // January 21, 2014 at 3am you would call:
+  // rtc.adjust(DateTime(2024, 3, 23, 7, 6, 0));
+  // // List all files on the SD card
+  sendDateOverSerial();
 
 }
 
 void loop() {
-  // put your main code here, to run repeatedly:
   dwinListen();
-  // if (loopCounter > maxIterations){
-  //   while (true) {
-  //   }
-  // }
-  // delay(10000);
+
 }
 void npkSense(){
   byte queryData[] = {0x01, 0x03, 0x00, 0x00, 0x00, 0x07, 0x04, 0x08};
@@ -3451,18 +3506,18 @@ void npkSense(){
     unsigned int phosphorus = (receivedData[13] << 8) | receivedData[14];
     unsigned int potassium = (receivedData[15] << 8) | receivedData[16];
     
-    moisture = (soilHumidity / 10.0) * 0.5175;
-    ec = (soilConductivity / 1000.0) * 2.8621; 
-    pH = (soilPH / 10.0) * 0.7556;
-    nitro = (nitrogen / 10.0) * 0.89;
-    phos = phosphorus * 0.1653;
-    potas =  (potassium  / 39.0983) * 0.047;
+    moisture = (soilHumidity / 10.0);
+    ec = (soilConductivity / 1000.0) - 0.43; 
+    pH = (soilPH / 10.0) - 0.84;
+    nitro = (nitrogen / 110.0);
+    phos = (phosphorus * 30.973762) / 1000;
+    potas =  (potassium  / 39.0983) / 100;
 
-    int n = static_cast<int>(nitro * 100) + 1;  
-    int ps = static_cast<int>(phos * 100) + 1;  
-    int k = static_cast<int>(potas * 100) + 1;
-    int ph = static_cast<int>(pH * 100) + 1;
-    int e = static_cast<int>(ec * 100) + 1;
+    int n = static_cast<int>(nitro * 100);  
+    int ps = static_cast<int>(phos * 100);  
+    int k = static_cast<int>(potas * 100);
+    int ph = static_cast<int>(pH * 100);
+    int e = static_cast<int>(ec * 100);
     int m = static_cast<int>(moisture * 100);
 
 
@@ -3509,6 +3564,7 @@ void npkSense(){
       electrical_conductivity(ec);
       moisture_(moisture);
       nutrient_reco(nit_both,phos_both,potas_both);
+      delay(5000);
     }
     else if (season == "WET" && texture == "MEDIUM" && variety == "HYBRID") {
       hybrid_nitrogen_mws(nitro);
@@ -3518,6 +3574,7 @@ void npkSense(){
       electrical_conductivity(ec);
       moisture_(moisture); 
       nutrient_reco(nit_both,phos_both,potas_both);
+      delay(5000);
     } else if (season == "WET" && texture == "HEAVY" && variety == "HYBRID"){
       hybrid_nitrogen_hws(nitro);
       phosphorus_(pH,phos);
@@ -3527,6 +3584,7 @@ void npkSense(){
       moisture_(moisture);
 
       nutrient_reco(nit_both,phos_both,potas_both);
+      delay(5000);
     } else if (season == "DRY" && texture == "LIGHT" && variety == "HYBRID"){
       hybrid_nitrogen_lds(nitro);
       phosphorus_(pH,phos);
@@ -3535,6 +3593,7 @@ void npkSense(){
       electrical_conductivity(ec);
       moisture_(moisture);
       nutrient_reco(nit_both,phos_both,potas_both);
+      delay(5000);
     } else if (season == "DRY" && texture == "MEDIUM" && variety == "HYBRID"){
       hybrid_nitrogen_mds(nitro);
       phosphorus_(pH,phos);
@@ -3543,6 +3602,7 @@ void npkSense(){
       electrical_conductivity(ec);
       moisture_(moisture); 
       nutrient_reco(nit_both,phos_both,potas_both);
+      delay(5000);
     } else if (season == "DRY" && texture == "HEAVY" && variety == "HYBRID"){
       hybrid_nitrogen_hds(nitro);
       phosphorus_(pH,phos);
@@ -3551,6 +3611,7 @@ void npkSense(){
       electrical_conductivity(ec);
       moisture_(moisture);
       nutrient_reco(nit_both,phos_both,potas_both);
+      delay(5000);
     } else if (season == "WET" && texture == "LIGHT" && variety == "INBRED"){
       inbred_nitrogen_lws(nitro);
       phosphorus_(pH,phos);
@@ -3559,6 +3620,7 @@ void npkSense(){
       electrical_conductivity(ec);
       moisture_(moisture);
       nutrient_reco(nit_both,phos_both,potas_both);
+      delay(5000);
     } else if (season == "WET" && texture == "MEDIUM" && variety == "INBRED"){
       inbred_nitrogen_mws(nitro);
       phosphorus_(pH,phos);
@@ -3567,6 +3629,7 @@ void npkSense(){
       electrical_conductivity(ec);
       moisture_(moisture);  
       nutrient_reco(nit_both,phos_both,potas_both);
+      delay(5000);
     } else if (season == "WET" && texture == "HEAVY" && variety == "INBRED"){
       inbred_nitrogen_hws(nitro);
       phosphorus_(pH,phos);
@@ -3575,6 +3638,7 @@ void npkSense(){
       electrical_conductivity(ec);
       moisture_(moisture);
       nutrient_reco(nit_both,phos_both,potas_both);
+      delay(5000);
     } else if (season == "DRY" && texture == "LIGHT" && variety == "INBRED"){
       inbred_nitrogen_lds(nitro);
       phosphorus_(pH,phos);
@@ -3583,6 +3647,7 @@ void npkSense(){
       electrical_conductivity(ec);
       moisture_(moisture);
       nutrient_reco(nit_both,phos_both,potas_both);
+      delay(5000);
     } else if (season == "DRY" && texture == "MEDIUM" && variety == "INBRED"){
       inbred_nitrogen_mds(nitro);
       phosphorus_(pH,phos);
@@ -3591,6 +3656,7 @@ void npkSense(){
       electrical_conductivity(ec);
       moisture_(moisture);    
       nutrient_reco(nit_both,phos_both,potas_both);
+      delay(5000);
     } else if (season == "DRY" && texture == "HEAVY" && variety == "INBRED"){
       inbred_nitrogen_hds(nitro);
       phosphorus_(pH,phos);
@@ -3599,6 +3665,7 @@ void npkSense(){
       electrical_conductivity(ec);
       moisture_(moisture);
       nutrient_reco(nit_both,phos_both,potas_both);
+      delay(5000);
     }
     splitting(nit_both,phos_both,potas_both);
 
@@ -3607,20 +3674,15 @@ void npkSense(){
   // Log data
   logData();
 }
-void restartDWIN(){
-  // Structure   {Initial} {len}  {Wo/p}(Add} {DataLen} {Command}
-  byte open[] = {0x5A, 0xA5, 0x06, 0x82, 0x04, 0x55, 0xAA, 0x5A, 0xA5};
-  Serial2.write(open, sizeof(open)); 
-  delay(50);
-  while (Serial2.available()) {
-      Serial2.read();
-  }
-}
+
 void printData(String prefix){
+  DateTime now = rtc.now();
+
   buttonState  = digitalRead(PRINT_BUTTON);
   if (buttonState != oldButtonState &&
     buttonState == HIGH)
   {
+
     printer.justify('C');
     printer.setSize('L');
     printer.boldOn();
@@ -3636,7 +3698,12 @@ void printData(String prefix){
 
     printer.setSize('S');
     printer.print("Date: ");
-    printer.print(__DATE__);
+    printer.print(now.year(),DEC);
+    printer.print('/');
+    printer.print(now.month(),DEC);
+    printer.print('/');
+    printer.println(now.day(),DEC);
+    printer.println(daysOfTheWeek[now.dayOfTheWeek()]);
     printer.println();
 
     // Separator
@@ -3651,7 +3718,6 @@ void printData(String prefix){
     printer.println();
     printer.justify('L');
     printer.println(F("   PARAMETER     VALUE"));
-
     printer.justify('L');
     printWithSpace(printer, "   Nitrogen-------",nitro, "%");
     printWithSpace(printer, "   Phosphorus-----", phos, "ppm");
@@ -3659,6 +3725,17 @@ void printData(String prefix){
     printWithSpace(printer, "   pH-------------", pH, " ");
     printWithSpace(printer, "   EC-------------", ec, "mS/cm");
     printWithSpace(printer, "   Moisture-------", moisture, "%");
+    
+    printer.println();
+    printer.justify('L');
+    printer.println(F("   PARAMETER     LABEL"));
+    printer.justify('L');
+    printWithText(printer, "   Nitrogen-------", nit_value.c_str(), "");
+    printWithText(printer, "   Phosphorus-----", phos_value.c_str(), "");
+    printWithText(printer, "   Potassium------", potas_value.c_str(), "");
+    printWithText(printer, "   pH-------------", ph_value.c_str(), "");
+    printWithText(printer, "   EC-------------", soil_salinity_class.c_str(), "");
+    printWithText(printer, "   Moisture-------", mois_value.c_str(), "");
 
     printer.println("--------------------------------");
     printer.justify('C'); // center the image
@@ -3816,9 +3893,12 @@ void switches(){
   int lightSwitchState = digitalRead(LIGHT_SELECTOR);
   int mediumSwitchState = digitalRead(MEDIUM_SELECTOR);
   int heavySwitchState = digitalRead(HEAVY_SELECTOR);
-  // Serial.print(lightSwitchState);
-  // Serial.print(mediumSwitchState);
-  // Serial.print(heavySwitchState);
+  Serial.print(lightSwitchState);
+  Serial.print(mediumSwitchState);
+  Serial.print(heavySwitchState);
+  Serial.println("SEASON:VARIETY");
+  Serial.print(button_selector_season);
+  Serial.print(button_selector_variety);
   button_selector_season = digitalRead(DRY_SELECTOR);
   button_selector_variety = digitalRead(INBRED_SELECTOR);
   button_selector_texture = digitalRead(LIGHT_SELECTOR);
@@ -3835,7 +3915,7 @@ void switches(){
       Serial2.write(Texture_Dwin,12);
       Serial2.write(Variety_Dwin,12);
     // medium 111
-    } else if (lightSwitchState == 1 && mediumSwitchState && heavySwitchState && button_selector_season == 1){
+    } else if (lightSwitchState == 1 && mediumSwitchState && heavySwitchState && mediumSwitchState && heavySwitchState && button_selector_season == 1){
       unsigned char Season_Dwin[] = {0x5A,0xA5,0x06,0x82,0x20,0x00,0x57,0x45,0x54};
       unsigned char Texture_Dwin[] = {0x5A,0xA5,0x09,0x82,0x10,0x00,0x4D,0x45,0x44,0x49,0x55,0x4D};
       unsigned char Variety_Dwin[] = {0x5A,0xA5,0x09,0x82,0x30,0x00,0x48,0x59,0x42,0x52,0x49,0x44};
@@ -3846,7 +3926,7 @@ void switches(){
       Serial2.write(Texture_Dwin,12);
       Serial2.write(Variety_Dwin,12);     
     // heavy 011
-    }else if (lightSwitchState == 0 && button_selector_season == 1){
+    }else if (lightSwitchState == 0 && mediumSwitchState == 1 && heavySwitchState == 1 && button_selector_season == 1){
       unsigned char Season_Dwin[] = {0x5A,0xA5,0x06,0x82,0x20,0x00,0x57,0x45,0x54};
       unsigned char Texture_Dwin[] = {0x5A,0xA5,0x09,0x82,0x10,0x00,0x48,0x45,0x41,0x56,0x59,0x2e};
       unsigned char Variety_Dwin[] = {0x5A,0xA5,0x09,0x82,0x30,0x00,0x48,0x59,0x42,0x52,0x49,0x44};
@@ -3882,7 +3962,7 @@ void switches(){
       Serial2.write(Variety_Dwin,12);  
 
     // heavy 011
-    } else if (lightSwitchState == 0 && button_selector_season == 0){
+    } else if (lightSwitchState == 0 && mediumSwitchState == 1 && heavySwitchState == 1 && button_selector_season == 0){
       unsigned char Season_Dwin[] = {0x5A,0xA5,0x06,0x82,0x20,0x00,0x44,0x52,0x59};
       unsigned char Texture_Dwin[] = {0x5A,0xA5,0x09,0x82,0x10,0x00,0x48,0x45,0x41,0x56,0x59,0x2e};
       unsigned char Variety_Dwin[] = {0x5A,0xA5,0x09,0x82,0x30,0x00,0x48,0x59,0x42,0x52,0x49,0x44};
@@ -3892,7 +3972,10 @@ void switches(){
       Serial2.write(Season_Dwin,9);
       Serial2.write(Texture_Dwin,12);
       Serial2.write(Variety_Dwin,12);
-    }
+    } 
+    unsigned char Variety_Dwin[] = {0x5A,0xA5,0x09,0x82,0x30,0x00,0x48,0x59,0x42,0x52,0x49,0x44};
+    variety = "HYBRID";
+    Serial2.write(Variety_Dwin,12);
 
   
   } else {
@@ -3926,7 +4009,7 @@ void switches(){
       Serial2.write(Texture_Dwin,12);
       Serial2.write(Variety_Dwin,12);
     // heavy 011
-    } else if (lightSwitchState == 0 && button_selector_season == 1){
+    } else if (lightSwitchState == 0 && mediumSwitchState == 1 && heavySwitchState == 1 && button_selector_season == 1){
       unsigned char Season_Dwin[] = {0x5A,0xA5,0x06,0x82,0x20,0x00,0x57,0x45,0x54};
       unsigned char Texture_Dwin[] = {0x5A,0xA5,0x09,0x82,0x10,0x00,0x48,0x45,0x41,0x56,0x59,0x2e};
       unsigned char Variety_Dwin[] = {0x5A,0xA5,0x09,0x82,0x30,0x00,0x49,0x4e,0x42,0x52,0x45,0x44};        
@@ -3961,7 +4044,7 @@ void switches(){
       Serial2.write(Texture_Dwin,13);
       Serial2.write(Variety_Dwin,12);  
     // heavy 011
-    } else if (lightSwitchState == 0 && button_selector_season == 0){
+    } else if (lightSwitchState == 0 && mediumSwitchState == 1 && heavySwitchState == 1 && button_selector_season == 0){
       unsigned char Season_Dwin[] = {0x5A,0xA5,0x06,0x82,0x20,0x00,0x44,0x52,0x59};
       unsigned char Texture_Dwin[] = {0x5A,0xA5,0x09,0x82,0x10,0x00,0x48,0x45,0x41,0x56,0x59,0x2e};
       unsigned char Variety_Dwin[] = {0x5A,0xA5,0x09,0x82,0x30,0x00,0x49,0x4e,0x42,0x52,0x45,0x44};
@@ -3972,5 +4055,8 @@ void switches(){
       Serial2.write(Texture_Dwin,12);
       Serial2.write(Variety_Dwin,12);
     }
+    unsigned char Variety_Dwin[] = {0x5A,0xA5,0x09,0x82,0x30,0x00,0x49,0x4e,0x42,0x52,0x45,0x44};
+    variety = "INBRED";
+    Serial2.write(Variety_Dwin,12);
   }
 }
