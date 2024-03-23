@@ -320,5 +320,6 @@ void setup() {
 
 void loop() { 
   dwinListen();
+  logData();
 
 }

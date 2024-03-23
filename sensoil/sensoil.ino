@@ -7,7 +7,7 @@
 
 
 const int chipSelect = 53; // Change this to the CS pin of your SD card module
-const int maxFiles = 10; // Maximum number of files, adjust as needed
+const int maxFiles = 50; // Maximum number of files, adjust as needed
 unsigned long fileCounter = 0;
 String fileNames[maxFiles]; // Array to store file names
 File dataFile;
@@ -51,6 +51,38 @@ File myFile;
 RTClib myRTC;
 DS3231 Clock;
 
+// Nutrient Reco
+float n_fil,p_fil,k_fil;
+int get_number1,rounded_value1;
+
+float n_fil_second,p_fil_second,k_fil_second;
+int get_number_second,rounded_value2;
+
+float n_fil_third,p_fil_third,k_fil_third;
+int get_number_third,rounded_value3;
+
+float n_fil_split2,p_fil_split2,k_fil_split2;
+int get_number_split2,rounded_value4;
+
+float n_fil_split2_second,p_fil_split2_second,k_fil_split2_second;
+int get_number_split2_second,rounded_value5;
+
+float n_fil_split3,p_fil_split3,k_fil_split3;
+int get_number_split3,rounded_value6;
+
+float n_fil_split3_second,p_fil_split3_second,k_fil_split3_second;
+int get_number_split3_second,rounded_value7;
+
+int n_fil_val,p_fil_val,k_fil_val;
+int n_fil_val_second,p_fil_val_second,k_fil_val_second;
+int n_fil_val_third,p_fil_val_third,k_fil_val_third;
+int n_fil_val_split2,p_fil_val_split2,k_fil_val_split2;
+int n_fil_val_split2_second,p_fil_val_split2_second,k_fil_val_split2_second;
+int n_fil_val_split3,p_fil_val_split3,k_fil_val_split3;
+int n_fil_val_split3_second,p_fil_val_split3_second,k_fil_val_split3_second;
+// times 2 value
+
+
 // SoftwareSerial Serial1(12,13);
 // SoftwareSerial Serial2(10,11);
 SoftwareSerial mySerial(14,15); // TX, RX
@@ -70,7 +102,7 @@ int buttonState = 0;
 int oldButtonState = LOW;
 
 const unsigned int PRINT_BUTTON = 8;
-
+String var1,var2,var3,var4,var5,var6,var7,var8,var9,var10,var11,var12,var13,var14,var15,var16,var17,var18,var19,var20;
 String month;
 int day;
 int year;
@@ -120,6 +152,21 @@ void sendDateOverSerial() {
   Year[7] = lowByte(year);
   Serial2.write(Year, 8);
 }
+String extractNumber(String input) {
+  // Find the position of the 'ST' substring
+  int stPos = input.indexOf("ST");
+
+  // Extract the substring starting from 'ST' to the end of the string
+  String remaining = input.substring(stPos + 2);
+
+  // Find the position of the '.CSV' substring
+  int csvPos = remaining.indexOf(".CSV");
+
+  // Extract the number from 'ST' to the '.CSV' position
+  String number = remaining.substring(0, csvPos);
+
+  return number;
+}
 void listFiles() {
   // Serial.println("Files on SD card:");
   File root = SD.open("/");
@@ -135,21 +182,21 @@ void listFiles() {
     if (!entry.isDirectory()) {
       // Check if the entry is a file, not a directory
       fileNames[count] = entry.name();
-      // Serial.println(fileNames[count]);
+      Serial.println(fileNames[count]);
       count++;
     }
     entry.close();
   }
   root.close();
 }
-void deleteFile(String fileName){
+void deleteFile(String fileName) {
   if (SD.exists(fileName)) {
-  // File exists, delete it
-  if (SD.remove(fileName)) {
-    Serial.println("File deleted successfully.");
-  } else {
-    Serial.println("Error deleting file.");
-  }
+    // File exists, delete it
+    if (SD.remove(fileName)) {
+      Serial.println("File deleted successfully.");
+    } else {
+      Serial.println("Error deleting file.");
+    }
   } else {
     Serial.println("File does not exist.");
   }
@@ -191,26 +238,16 @@ void formatSDCard() {
 }
 String extractPrefix(String filename) {
   int underscorePos = filename.indexOf('_');
-
   String prefix = filename.substring(0, underscorePos);
+
+  int extensionPos = filename.lastIndexOf('.');
+  if (extensionPos != -1) {
+    prefix = prefix.substring(0, extensionPos);
+  }
 
   return prefix;
 }
-String extractNumber(String input) {
-  // Find the position of the 'ST' substring
-  int stPos = input.indexOf("ST");
 
-  // Extract the substring starting from 'ST' to the end of the string
-  String remaining = input.substring(stPos + 2);
-
-  // Find the position of the '.CSV' substring
-  int csvPos = remaining.indexOf(".CSV");
-
-  // Extract the number from 'ST' to the '.CSV' position
-  String number = remaining.substring(0, csvPos);
-
-  return number;
-}
 void dwinListen(){
 
   while(true){
@@ -227,65 +264,381 @@ void dwinListen(){
     String address;
     // // List all files on the SD card
     listFiles();
-    String var1 = fileNames[0];
-    String var2 = fileNames[1];
-    String var3 = fileNames[2];
-    String var4 = fileNames[3];
-    String var5 = fileNames[4];
-    String var6 = fileNames[5];
-    String var7 = fileNames[6];
-    String var8 = fileNames[7];
-    String var9 = fileNames[8];
-    String var10 = fileNames[9];
-    String var11 = fileNames[10];
-    String var12 = fileNames[11];
-    String var13 = fileNames[12];
-    String var14 = fileNames[13];
-    String var15 = fileNames[14];
-    String var16 = fileNames[15];
-    String var17 = fileNames[16];
-    String var18 = fileNames[17];
-    String var19 = fileNames[18];
-    String var20 = fileNames[19];
-    for (int i = 0; i < maxFiles; ++i) 
-    {
-      Serial.println(fileNames[i]);
-      // delay(5000);
-      // format = fileNames[i];
-      prefix = extractPrefix(fileNames[i]); 
-      // Serial.println("Prefix: " + prefix);
-      String extractedNumber = extractNumber(fileNames[i]);
+    var1 = fileNames[0];
+    var2 = fileNames[1];
+    var3 = fileNames[2];
+    var4 = fileNames[3];
+    var5 = fileNames[4];
+    var6 = fileNames[5];
+    var7 = fileNames[6];
+    var8 = fileNames[7];
+    var9 = fileNames[8];
+    var10 = fileNames[9];
+    var11 = fileNames[10];
+    var12 = fileNames[11];
+    var13 = fileNames[12];
+    var14 = fileNames[13];
+    var15 = fileNames[14];
+    var16 = fileNames[15];
+    var17 = fileNames[16];
+    var18 = fileNames[17];
+    var19 = fileNames[18];
+    var20 = fileNames[19];
 
-      // Serial.println("Extracted Number: " + extractedNumber);
 
-      // delay(2000);
-      if (i == 0) {
-        unsigned char Data1[8] = {0x5A, 0xA5, 0x05, 0x82, 0x24, 0x00, 0x00, 0x00};
-        unsigned char CharData1[] = {0x5A,0xA5,0x05,0x82,0x31,0x00,0x53,0x54};
+    String extractedNumber1 = extractNumber(fileNames[0]);
+    String extractedNumber2 = extractNumber(fileNames[1]);
+    String extractedNumber3 = extractNumber(fileNames[2]);
+    String extractedNumber4 = extractNumber(fileNames[3]);
+    String extractedNumber5 = extractNumber(fileNames[4]);
+    String extractedNumber6 = extractNumber(fileNames[5]);
+    String extractedNumber7 = extractNumber(fileNames[6]);
+    String extractedNumber8 = extractNumber(fileNames[7]);
+    String extractedNumber9 = extractNumber(fileNames[8]);
+    String extractedNumber10 = extractNumber(fileNames[9]);
 
-        int dataF1 = extractedNumber.toInt();
-        Data1[6] = highByte(dataF1);
-        Data1[7] = lowByte(dataF1);
-        Serial2.write(Data1, 8);
-        Serial2.write(CharData1,8);
-        // Serial.println("var" + String(i + 1) + ": " + fileNames[i]);
-      }
-      if (i == 1){
-        unsigned char Data2[8] = {0x5A, 0xA5, 0x05, 0x82, 0x25, 0x00, 0x00, 0x00};
-        int dataF2 = extractedNumber.toInt();
-        Serial.println("Var2" + var2);
-        Data2[6] = highByte(dataF2);
-        Data2[7] = lowByte(dataF2);
-        Serial2.write(Data2, 8);
-        // Serial.println("var" + String(i + 1) + ": " + fileNames[i]);
-      }
-      if (i == 2){
-        
-      }
+    String extractedNumber11 = extractNumber(fileNames[10]);
+    String extractedNumber12 = extractNumber(fileNames[11]);
+    String extractedNumber13 = extractNumber(fileNames[12]);
+    String extractedNumber14 = extractNumber(fileNames[13]);
+    String extractedNumber15 = extractNumber(fileNames[14]);
+    String extractedNumber16 = extractNumber(fileNames[15]);
+    String extractedNumber17 = extractNumber(fileNames[16]);
+    String extractedNumber18 = extractNumber(fileNames[17]);
+    String extractedNumber19 = extractNumber(fileNames[18]);
+    String extractedNumber20 = extractNumber(fileNames[19]);
 
+    // Serial.println(fileNames[0]);
+    unsigned char Data1[8] = {0x5A, 0xA5, 0x05, 0x82, 0x24, 0x00, 0x00, 0x00};
+    int dataF1;
+
+    if (!SD.exists(fileNames[0])) {
+        unsigned char VarData1[8] = {0x5A, 0xA5,0x05, 0x82, 0x31,0x00,0x2D,0x2D};
+        dataF1 = 0;
+        Serial2.write(VarData1, 8);
+    } else {
+        unsigned char VarData1[8] = {0x5A, 0xA5,0x05, 0x82, 0x31,0x00,0x53,0x54};
+        dataF1 =extractedNumber1.toInt();
+        Serial.println(dataF1);
+        Serial2.write(VarData1, 8);
     }
-    printData(prefix);
 
+    Data1[6] = highByte(dataF1);
+    Data1[7] = lowByte(dataF1);
+    Serial2.write(Data1, 8);
+    Serial.println(dataF1);
+
+    unsigned char Data2[8] = {0x5A, 0xA5, 0x05, 0x82, 0x24, 0x10, 0x00, 0x00};
+    int dataF2;
+    if (!SD.exists(fileNames[1])) {
+        unsigned char VarData2[8] = {0x5A, 0xA5,0x05, 0x82, 0x31,0x10,0x2D,0x2D};
+        dataF2 = 0;
+        Serial2.write(VarData2, 8);
+    } else {
+        unsigned char VarData2[8] = {0x5A, 0xA5,0x05, 0x82, 0x31,0x10,0x53,0x54};
+        dataF2 =extractedNumber2.toInt();
+        Serial.println(dataF2);
+        Serial2.write(VarData2, 8);
+    }
+    Data2[6] = highByte(dataF2);
+    Data2[7] = lowByte(dataF2);
+    Serial2.write(Data2, 8);
+
+
+    int dataF3;
+    unsigned char Data3[8] = {0x5A, 0xA5, 0x05, 0x82, 0x24, 0x20, 0x00, 0x00};
+    if (!SD.exists(fileNames[2])) {
+      unsigned char VarData3[8] = {0x5A, 0xA5,0x05, 0x82, 0x31,0x20,0x2D,0x2D};
+      dataF3 = 0;
+      Serial2.write(VarData3, 8);
+    } else {
+      unsigned char VarData3[8] = {0x5A, 0xA5,0x05, 0x82, 0x31,0x20,0x53,0x54};
+      dataF3= extractedNumber3.toInt();
+      Serial2.write(VarData3, 8);
+    }
+
+    Data3[6] = highByte(dataF3);
+    Data3[7] = lowByte(dataF3);
+    Serial2.write(Data3, 8);
+
+    int dataF4;
+    unsigned char Data4[8] = {0x5A, 0xA5, 0x05, 0x82, 0x24, 0x30, 0x00, 0x00};
+    if (!SD.exists(fileNames[3])) {
+      unsigned char VarData4[8] = {0x5A, 0xA5,0x05, 0x82, 0x31,0x30,0x2D,0x2D};
+      dataF4 = 0;
+      Serial2.write(VarData4, 8);
+    } else {
+      unsigned char VarData4[8] = {0x5A, 0xA5,0x05, 0x82, 0x31,0x30,0x53,0x54};
+      dataF4= extractedNumber4.toInt();
+      Serial2.write(VarData4, 8);
+    }
+
+    Data4[6] = highByte(dataF4);
+    Data4[7] = lowByte(dataF4);
+    Serial2.write(Data4, 8);
+
+    int dataF5;
+    unsigned char Data5[8] = {0x5A, 0xA5, 0x05, 0x82, 0x24, 0x40, 0x00, 0x00};
+    if (!SD.exists(fileNames[4])) {
+      unsigned char VarData5[8] = {0x5A, 0xA5,0x05, 0x82, 0x31,0x40,0x2D,0x2D};
+      dataF5 = 0;
+      Serial2.write(VarData5, 8);
+    } else {
+      unsigned char VarData5[8] = {0x5A, 0xA5,0x05, 0x82, 0x31,0x40,0x53,0x54};
+      dataF5= extractedNumber5.toInt();
+      Serial2.write(VarData5, 8);
+    }
+
+    Data5[6] = highByte(dataF5);
+    Data5[7] = lowByte(dataF5);
+    Serial2.write(Data5, 8);
+
+    int dataF6;
+    unsigned char Data6[8] = {0x5A, 0xA5, 0x05, 0x82, 0x24, 0x50, 0x00, 0x00};
+    if (!SD.exists(fileNames[5])) {
+      unsigned char VarData6[8] = {0x5A, 0xA5,0x05, 0x82, 0x31,0x50,0x2D,0x2D};
+      dataF6 = 0;
+      Serial2.write(VarData6, 8);
+    } else {
+      unsigned char VarData6[8] = {0x5A, 0xA5,0x05, 0x82, 0x31,0x50,0x53,0x54};
+      dataF6= extractedNumber6.toInt();
+      Serial2.write(VarData6, 8);
+    }
+
+    Data6[6] = highByte(dataF6);
+    Data6[7] = lowByte(dataF6);
+    Serial2.write(Data6, 8);
+
+    int dataF7;
+    unsigned char Data7[8] = {0x5A, 0xA5, 0x05, 0x82, 0x24, 0x60, 0x00, 0x00};
+    if (!SD.exists(fileNames[6])) {
+      unsigned char VarData7[8] = {0x5A, 0xA5,0x05, 0x82, 0x31,0x60,0x2D,0x2D};
+      dataF7 = 0;
+      Serial2.write(VarData7, 8);
+    } else {
+      unsigned char VarData7[8] = {0x5A, 0xA5,0x05, 0x82, 0x31,0x60,0x53,0x54};
+      dataF7= extractedNumber7.toInt();
+      Serial2.write(VarData7, 8);
+    }
+
+    Data7[6] = highByte(dataF7);
+    Data7[7] = lowByte(dataF7);
+    Serial2.write(Data7, 8);
+
+    int dataF8;
+    unsigned char Data8[8] = {0x5A, 0xA5, 0x05, 0x82, 0x24, 0x70, 0x00, 0x00};
+    if (!SD.exists(fileNames[7])) {
+      unsigned char VarData8[8] = {0x5A, 0xA5,0x05, 0x82, 0x31,0x70,0x2D,0x2D};
+      dataF8 = 0;
+      Serial2.write(VarData8, 8);
+    } else {
+      unsigned char VarData8[8] = {0x5A, 0xA5,0x05, 0x82, 0x31,0x70,0x53,0x54};
+      dataF8= extractedNumber8.toInt();
+      Serial2.write(VarData8, 8);
+    }
+
+    Data8[6] = highByte(dataF8);
+    Data8[7] = lowByte(dataF8);
+    Serial2.write(Data8, 8);
+
+    int dataF9;
+    unsigned char Data9[8] = {0x5A, 0xA5, 0x05, 0x82, 0x24, 0x80, 0x00, 0x00};
+    if (!SD.exists(fileNames[8])) {
+      unsigned char VarData9[8] = {0x5A, 0xA5,0x05, 0x82, 0x31,0x80,0x2D,0x2D};
+      dataF9 = 0;
+      Serial2.write(VarData9, 8);
+    } else {
+      unsigned char VarData9[8] = {0x5A, 0xA5,0x05, 0x82, 0x31,0x80,0x53,0x54};
+      dataF9= extractedNumber9.toInt();
+      Serial2.write(VarData9, 8);
+    }
+
+    Data9[6] = highByte(dataF9);
+    Data9[7] = lowByte(dataF9);
+    Serial2.write(Data9, 8);
+
+    int dataF10;
+    unsigned char Data10[8] = {0x5A, 0xA5, 0x05, 0x82, 0x24, 0x90, 0x00, 0x00};
+    if (!SD.exists(fileNames[9])) {
+      unsigned char VarData10[8] = {0x5A, 0xA5,0x05, 0x82, 0x31,0x90,0x2D,0x2D};
+      dataF10 = 0;
+      Serial2.write(VarData10, 8);
+    } else {
+      unsigned char VarData10[8] = {0x5A, 0xA5,0x05, 0x82, 0x31,0x90,0x53,0x54};
+      dataF10= extractedNumber10.toInt();
+      Serial2.write(VarData10, 8);
+    }
+
+    Data10[6] = highByte(dataF10);
+    Data10[7] = lowByte(dataF10);
+    Serial2.write(Data10, 8);
+
+    int dataF11;
+    unsigned char Data11[8] = {0x5A, 0xA5, 0x05, 0x82, 0x25, 0x00, 0x00, 0x00};
+    if (!SD.exists(fileNames[10])) {
+      unsigned char VarData11[8] = {0x5A, 0xA5,0x05, 0x82, 0x32,0x00,0x2D,0x2D};
+      dataF11 = 0;
+      Serial2.write(VarData11, 8);
+    } else {
+      unsigned char VarData11[8] = {0x5A, 0xA5,0x05, 0x82, 0x32,0x00,0x53,0x54};
+      dataF11= extractedNumber11.toInt();
+      Serial2.write(VarData11, 8);
+    }
+
+    Data11[6] = highByte(dataF11);
+    Data11[7] = lowByte(dataF11);
+    Serial2.write(Data11, 8);
+
+    int dataF12;
+    unsigned char Data12[8] = {0x5A, 0xA5, 0x05, 0x82, 0x25, 0x10, 0x00, 0x00};
+    if (!SD.exists(fileNames[11])) {
+      unsigned char VarData12[8] = {0x5A, 0xA5,0x05, 0x82, 0x32,0x10,0x2D,0x2D};
+      dataF12 = 0;
+      Serial2.write(VarData12, 8);
+    } else {
+      unsigned char VarData12[8] = {0x5A, 0xA5,0x05, 0x82, 0x32,0x10,0x53,0x54};
+      dataF12= extractedNumber12.toInt();
+      Serial2.write(VarData12, 8);
+    }
+
+    Data12[6] = highByte(dataF12);
+    Data12[7] = lowByte(dataF12);
+    Serial2.write(Data12, 8);
+
+    int dataF13;
+    unsigned char Data13[8] = {0x5A, 0xA5, 0x05, 0x82, 0x25, 0x20, 0x00, 0x00};
+    if (!SD.exists(fileNames[12])) {
+      unsigned char VarData13[8] = {0x5A, 0xA5,0x05, 0x82, 0x32,0x20,0x2D,0x2D};
+      dataF13 = 0;
+      Serial2.write(VarData13, 8);
+    } else {
+      unsigned char VarData13[8] = {0x5A, 0xA5,0x05, 0x82, 0x32,0x20,0x53,0x54};
+      dataF13= extractedNumber13.toInt();
+      Serial2.write(VarData13, 8);
+    }
+
+    Data13[6] = highByte(dataF13);
+    Data13[7] = lowByte(dataF13);
+    Serial2.write(Data13, 8);
+
+    int dataF14;
+    unsigned char Data14[8] = {0x5A, 0xA5, 0x05, 0x82, 0x25, 0x30, 0x00, 0x00};
+    if (!SD.exists(fileNames[13])) {
+      unsigned char VarData14[8] = {0x5A, 0xA5,0x05, 0x82, 0x32,0x30,0x2D,0x2D};
+      dataF14 = 0;
+      Serial2.write(VarData14, 8);
+    } else {
+      unsigned char VarData14[8] = {0x5A, 0xA5,0x05, 0x82, 0x32,0x30,0x53,0x54};
+      dataF14= extractedNumber14.toInt();
+      Serial2.write(VarData14, 8);
+    }
+
+    Data14[6] = highByte(dataF14);
+    Data14[7] = lowByte(dataF14);
+    Serial2.write(Data14, 8);
+
+    int dataF15;
+    unsigned char Data15[8] = {0x5A, 0xA5, 0x05, 0x82, 0x25, 0x40, 0x00, 0x00};
+    if (!SD.exists(fileNames[14])) {
+      unsigned char VarData15[8] = {0x5A, 0xA5,0x05, 0x82, 0x32,0x40,0x2D,0x2D};
+      dataF15 = 0;
+      Serial2.write(VarData15, 8);
+    } else {
+      unsigned char VarData15[8] = {0x5A, 0xA5,0x05, 0x82, 0x32,0x40,0x53,0x54};
+      dataF15= extractedNumber15.toInt();
+      Serial2.write(VarData15, 8);
+    }
+
+    Data15[6] = highByte(dataF15);
+    Data15[7] = lowByte(dataF15);
+    Serial2.write(Data15, 8);
+
+    int dataF16;
+    unsigned char Data16[8] = {0x5A, 0xA5, 0x05, 0x82, 0x25, 0x50, 0x00, 0x00};
+    if (!SD.exists(fileNames[15])) {
+      unsigned char VarData16[8] = {0x5A, 0xA5,0x05, 0x82, 0x32,0x50,0x2D,0x2D};
+      dataF16 = 0;
+      Serial2.write(VarData16, 8);
+    } else {
+      unsigned char VarData16[8] = {0x5A, 0xA5,0x05, 0x82, 0x32,0x50,0x53,0x54};
+      dataF16= extractedNumber16.toInt();
+      Serial2.write(VarData16, 8);
+    }
+
+    Data16[6] = highByte(dataF16);
+    Data16[7] = lowByte(dataF16);
+    Serial2.write(Data16, 8);
+
+    int dataF17;
+    unsigned char Data17[8] = {0x5A, 0xA5, 0x05, 0x82, 0x25, 0x60, 0x00, 0x00};
+    if (!SD.exists(fileNames[16])) {
+      unsigned char VarData17[8] = {0x5A, 0xA5,0x05, 0x82, 0x32,0x60,0x2D,0x2D};
+      dataF17 = 0;
+      Serial2.write(VarData17, 8);
+    } else {
+      unsigned char VarData17[8] = {0x5A, 0xA5,0x05, 0x82, 0x32,0x60,0x53,0x54};
+      dataF17= extractedNumber17.toInt();
+      Serial2.write(VarData17, 8);
+    }
+
+    Data17[6] = highByte(dataF17);
+    Data17[7] = lowByte(dataF17);
+    Serial2.write(Data17, 8);
+
+    int dataF18;
+    unsigned char Data18[8] = {0x5A, 0xA5, 0x05, 0x82, 0x25, 0x70, 0x00, 0x00};
+    if (!SD.exists(fileNames[17])) {
+      unsigned char VarData18[8] = {0x5A, 0xA5,0x05, 0x82, 0x32,0x70,0x2D,0x2D};
+      dataF18 = 0;
+      Serial2.write(VarData18, 8);
+    } else {
+      unsigned char VarData18[8] = {0x5A, 0xA5,0x05, 0x82, 0x32,0x70,0x53,0x54};
+      dataF18= extractedNumber18.toInt();
+      Serial2.write(VarData18, 8);
+    }
+
+    Data18[6] = highByte(dataF18);
+    Data18[7] = lowByte(dataF18);
+    Serial2.write(Data18, 8);
+
+    int dataF19;
+    unsigned char Data19[8] = {0x5A, 0xA5, 0x05, 0x82, 0x25, 0x80, 0x00, 0x00};
+    if (!SD.exists(fileNames[18])) {
+      unsigned char VarData19[8] = {0x5A, 0xA5,0x05, 0x82, 0x32,0x80,0x2D,0x2D};
+      dataF19 = 0;
+      Serial2.write(VarData19, 8);
+    } else {
+      unsigned char VarData19[8] = {0x5A, 0xA5,0x05, 0x82, 0x32,0x80,0x53,0x54};
+      dataF19= extractedNumber19.toInt();
+      Serial2.write(VarData19, 8);
+    }
+
+    Data19[6] = highByte(dataF19);
+    Data19[7] = lowByte(dataF19);
+    Serial2.write(Data19, 8);
+
+
+    int dataF20;
+    unsigned char Data20[8] = {0x5A, 0xA5, 0x05, 0x82, 0x25, 0x90, 0x00, 0x00};
+    if (!SD.exists(fileNames[19])) {
+      unsigned char VarData20[8] = {0x5A, 0xA5,0x05, 0x82, 0x32,0x90,0x2D,0x2D};
+      dataF20 = 0;
+      Serial2.write(VarData20, 8);
+    } else {
+      unsigned char VarData20[8] = {0x5A, 0xA5,0x05, 0x82, 0x32,0x90,0x53,0x54};
+      dataF20= extractedNumber20.toInt();
+      Serial2.write(VarData20, 8);
+    }
+
+    Data20[6] = highByte(dataF20);
+    Data20[7] = lowByte(dataF20);
+    Serial2.write(Data20, 8);
+
+
+
+
+    printData(prefix);
+    Serial.println(prefix);
     while (Serial2.available()) {
         int inhex = Serial2.read();
         if( inhex == 90 || inhex == 165){
@@ -293,7 +646,6 @@ void dwinListen(){
         }
         
         for (int i=1; i<=inhex; i++) {
-          // Serial.print(inhex);
           while(!Serial2.available()); 
           int incomingByte = Serial2.read();
           // Serial.print(incomingByte);
@@ -308,9 +660,10 @@ void dwinListen(){
             dataVal = incomingByte;
           }
         }
+        restartDWIN();
+        delay(700);
       address = String(startAdd)+String(endAdd);
-      Serial.print("Address " + address + " Data " + String(dataVal) + " | ");
-      delay(100);
+      Serial.println("Address " + address + " Data " + String(dataVal));
       // if (address == "1656"){
       //   deleteFile(filename);
       //   Serial.println(filename);
@@ -325,22 +678,22 @@ void dwinListen(){
         case 186:
             filename = var2;
             readDataAndAssignVariables(var2);
-            delay(5000);
+            delay(100);
             break;
         case 187:
             filename = var3;
             readDataAndAssignVariables(var3);
-            delay(5000);
+            delay(100);
             break;
         case 188:
             filename = var4;
             readDataAndAssignVariables(var4);
-            delay(5000);
+            delay(100);
             break;
         case 189:
             filename = var5;
             readDataAndAssignVariables(var5);
-            delay(5000);
+            delay(100);
             break;
         case 1816:
             filename = var6;
@@ -420,17 +773,18 @@ void dwinListen(){
         case 510:
             deleteFile(filename);
             Serial.println(filename);
+            delay(100);
             break;
         // NPK result
         case 530:
             npkSense();
             restartDWIN();
-            delay(20000);
+            delay(1000);
             break;
         // Format All
         case 520:
           formatSDCard();
-          delay(5000);
+          delay(100);
           break;
 
         // Add more cases for other addresses as needed
@@ -438,40 +792,10 @@ void dwinListen(){
         default:
             break;
       }
-      //   
-      // } else if (address == "186" || address == "3480" || address == "13079") {
-      //   filename = var2;
-      //   readDataAndAssignVariables(var2);
-      // } else if (address == "187" || address == "16280" || address == "7990") {
-      //   filename = var3;
-      //   readDataAndAssignVariables(var3);
-      // } else if (address == "188" || address == "4834" || address == "190" || address == "45255") {
-      //   filename = var4;
-      //   readDataAndAssignVariables(var4);
-      // } else if (address == "189" || address == "48162" || address == "105208" || address == "16266") {
-      //   filename = var5;
-      //   readDataAndAssignVariables(var5);
-      // } 
-      // else if (address == "1820" && dataVal == 1) {
-      //   filename = var5;
-      //   readDataAndAssignVariables(var5);
-      // } else if (address == "1819" && dataVal == 1) {
-      //   filename = var6;
-      //   readDataAndAssignVariables(var6);
-      // } else if (address == "1818" && dataVal == 1) {
-      //   filename = var7;
-      //   readDataAndAssignVariables(var7);
-      // } else if (address == "1817" && dataVal == 1) {
-      //   filename = var8;
-      //   readDataAndAssignVariables(var8);
-      // } else if (address == "189" && dataVal == 1) {
-      //   filename = var9;
-      //   readDataAndAssignVariables(var9);
-      // }
 
     }
-
   }
+
 
 }
 void readDataAndAssignVariables(String fileName) {
@@ -485,13 +809,16 @@ void readDataAndAssignVariables(String fileName) {
     while (dataFile.available()) {
       String dataLine = dataFile.readStringUntil('\n');
       parseAndAssignVariables(dataLine);
+      // delay(1000);
+      // printAssignedValues(prefix);
     }
+    printAssignedValues(prefix);
     printData(prefix);
+    delay(5000);
     // Close the file
     dataFile.close();
 
-    // Print the assigned values for verification
-    printAssignedValues(prefix);
+
 
   } else {
     Serial.println("Error opening file: " + String(fileName));
@@ -530,14 +857,82 @@ void parseAndAssignVariables(String dataLine) {
       phos_both = value.toInt();
     } else if (header == "K") {
       potas_both = value.toInt();
+
+    } else if (header == "1st Bag 1") {
+      get_number1 = value.toInt();
+    } else if (header == "1st Kg 1"){
+      rounded_value1 = value.toInt();
+    } else if (header == "1st N1"){
+      n_fil_val = value.toInt();
+    } else if (header == "1st P1"){
+      p_fil_val = value.toInt();
+    } else if (header == "1st K1"){
+      k_fil_val = value.toInt();
+    } else if (header == "1st Bag 2") {
+      get_number_second = value.toInt();
+    } else if (header == "1st Kg 2"){
+      rounded_value2 = value.toInt();
+    } else if (header == "1st N2"){
+      n_fil_val_second = value.toInt();
+    } else if (header == "1st P2"){
+      p_fil_val_second = value.toInt();
+    } else if (header == "1st K2"){
+      k_fil_val_second = value.toInt();
+    } else if (header == "1st Bag 3") {
+      get_number_third = value.toInt();
+    } else if (header == "1st Kg 3"){
+      rounded_value3 = value.toInt();
+    } else if (header == "1st N3"){
+      n_fil_val_third = value.toInt();
+    } else if (header == "1st P3"){
+      p_fil_val_third = value.toInt();
+    } else if (header == "1st K3"){
+      k_fil_val_third = value.toInt();
+
+    } else if (header == "2nd Bag 1") {
+      get_number_split2 = value.toInt();
+    } else if (header == "2nd Kg 1"){
+      rounded_value4 = value.toInt();
+    } else if (header == "2nd N1"){
+      n_fil_val_split2 = value.toInt();
+    } else if (header == "2nd P1"){
+      p_fil_val_split2 = value.toInt();
+    } else if (header == "2nd K1"){
+      k_fil_val_split2 = value.toInt();
+    } else if (header == "2nd Bag 2") {
+      get_number_split2_second = value.toInt();
+    } else if (header == "2nd Kg 2"){
+      rounded_value5 = value.toInt();
+    } else if (header == "2nd N2"){
+      n_fil_val_split2_second = value.toInt();
+    } else if (header == "2nd P2"){
+      p_fil_val_split2_second = value.toInt();
+    } else if (header == "2nd K2"){
+      k_fil_val_split2_second = value.toInt();
+      
+    } else if (header == "3rd Bag 1"){
+      get_number_split3 = value.toInt();
+    } else if (header == "3rd Kg 1"){
+      rounded_value6 = value.toInt();
+    } else if (header == "3rd N1"){
+      n_fil_val_split3 = value.toInt();
+    } else if (header == "3rd P1"){
+      p_fil_val_split3 = value.toInt();
+    } else if (header == "3rd K1"){
+      k_fil_val_split3 = value.toInt();
+    } else if (header == "3rd Bag 2"){
+      get_number_split3_second = value.toInt();
+    } else if (header == "3rd Kg 2"){
+      rounded_value7 = value.toInt();
+    } else if (header == "3rd N2"){
+      n_fil_val_split3_second = value.toInt();
+    } else if (header == "3rd P2"){
+      p_fil_val_split3_second = value.toInt();
+    } else if (header == "3rd K2"){
+      k_fil_val_split3_second = value.toInt();
     }
-    // } else if (header == "1st application") {
-    //   firstApplication = value;
-    // } else if (header == "2nd application") {
-    //   secondApplication = value;
-    // } else if (header == "3rd application") {
-    //   thirdApplication = value;
-    // }
+
+    
   }
 }
 void printAssignedValues(String prefix) {
@@ -555,6 +950,29 @@ void printAssignedValues(String prefix) {
   Serial.println("N: " + String(nit_both));
   Serial.println("P: " + String(phos_both));
   Serial.println("K: " + String(potas_both));
+  Serial.println("N_FIl: " + String(n_fil));
+  Serial.println("p_fil: " + String(p_fil)); 
+  Serial.println("k_fil: " + String(k_fil)); 
+  Serial.println("n_fil_second: " + String(n_fil_second)); 
+  Serial.println("p_fil_second: " + String(p_fil_second)); 
+  Serial.println("k_fil_second: " + String(k_fil_second)); 
+  Serial.println("n_fil_third: " + String(n_fil_third)); 
+  Serial.println("p_fil_third: " + String(p_fil_third)); 
+  Serial.println("k_fil_third: " + String(k_fil_third)); 
+  Serial.println("n_fil_split2: " + String(n_fil_split2)); 
+  Serial.println("p_fil_split2: " + String(p_fil_split2)); 
+  Serial.println("k_fil_split2: " + String(k_fil_split2)); 
+  Serial.println("n_fil_split2_second: " + String(n_fil_split2_second)); 
+  Serial.println("p_fil_split2_second: " + String(p_fil_split2_second)); 
+  Serial.println("k_fil_split2_second: " + String(k_fil_split2_second)); 
+  Serial.println("n_fil_split3: " + String(n_fil_split3)); 
+  Serial.println("p_fil_split3: " + String(p_fil_split3)); 
+  Serial.println("k_fil_split3: " + String(k_fil_split3)); 
+  Serial.println("n_fil_split3_second: " + String(n_fil_split3_second)); 
+  Serial.println("p_fil_split3_second: " + String(p_fil_split3_second)); 
+  Serial.println("k_fil_split3_second: " + String(k_fil_split3_second)); 
+
+
 }
 void retrieveCounterFromEEPROM() {
   // Retrieve the counter value from EEPROM
@@ -607,6 +1025,70 @@ void logData() {
     dataFile.println("N," + String(nit_both));
     dataFile.println("P," + String(phos_both));
     dataFile.println("K," + String(potas_both));
+
+    dataFile.println("1st Topdressing (5-7 DAT)");
+    dataFile.println();
+    dataFile.println("1st Bag 1, " + String(get_number1));
+    dataFile.println("1st Kg 1, " + String(rounded_value1));
+    dataFile.println();
+    dataFile.println("1st N1," + String(static_cast<int>(n_fil_val)));
+    dataFile.println("1st P1," + String(static_cast<int>(p_fil_val)));
+    dataFile.println("1st K1," + String(static_cast<int>(k_fil_val)));
+
+    dataFile.println();
+    dataFile.println("1st Bag 2, " + String(get_number_second));
+    dataFile.println("1st Kg 2, " + String(rounded_value2));
+    dataFile.println();
+    dataFile.println("1st N2, " + String(static_cast<int>(n_fil_val_second)));
+    dataFile.println("1st P2, " + String(static_cast<int>(p_fil_val_second)));
+    dataFile.println("1st K2, " + String(static_cast<int>(k_fil_val_second)));  
+    
+    dataFile.println();
+    dataFile.println("1st Bag 3, " + String(get_number_third));
+    dataFile.println("1st Kg 3, " + String(rounded_value3));
+    dataFile.println();
+    dataFile.println("1st N3, " + String(static_cast<int>(n_fil_val_third)));
+    dataFile.println("1st P3, " + String(static_cast<int>(p_fil_val_third)));
+    dataFile.println("1st K3, " + String(static_cast<int>(k_fil_val_third)));  
+
+    dataFile.println();
+    dataFile.println("2nd Topdressing (20-24 DAT)");
+    dataFile.println();
+    dataFile.println("2nd Bag 1, " + String(get_number_split2));
+    dataFile.println("2nd Kg 1, " + String(rounded_value4));
+    dataFile.println();
+    dataFile.println("2nd N1, " + String(static_cast<int>(n_fil_val_split2)));
+    dataFile.println("2nd P1, " + String(static_cast<int>(p_fil_val_split2)));
+    dataFile.println("2nd K1, " + String(static_cast<int>(k_fil_val_split2)));  
+
+    dataFile.println();
+    dataFile.println("2nd Bag 2, " + String(get_number_split2_second));
+    dataFile.println("2nd Kg 2, " + String(rounded_value5));
+    dataFile.println();
+    dataFile.println("2nd N2, " + String(static_cast<int>(n_fil_val_split2_second)));
+    dataFile.println("2nd P2, " + String(static_cast<int>(p_fil_val_split2_second)));
+    dataFile.println("2nd K2, " + String(static_cast<int>(k_fil_val_split2_second)));  
+
+    dataFile.println();
+    dataFile.println("3rd Topdressing (30-35 DAT)");
+    dataFile.println();
+
+    dataFile.println("3rd Bag 1, " + String(get_number_split3));
+    dataFile.println("3rd Kg 1, " + String(rounded_value6));
+    dataFile.println();
+    dataFile.println("3rd N1, " + String(static_cast<int>(n_fil_val_split3)));
+    dataFile.println("3rd P1, " + String(static_cast<int>(p_fil_val_split3)));
+    dataFile.println("3rd K1, " + String(static_cast<int>(k_fil_val_split3)));  
+
+    dataFile.println();
+    dataFile.println("3rd Bag 2, " + String(get_number_split3_second));
+    dataFile.println("3rd Kg 2, " + String(rounded_value7));
+    dataFile.println();
+    dataFile.println("3rd N2, " + String(static_cast<int>(n_fil_val_split3_second)));
+    dataFile.println("3rd P2, " + String(static_cast<int>(p_fil_val_split3_second)));
+    dataFile.println("3rd K2, " + String(static_cast<int>(k_fil_val_split3_second)));
+
+
 
     Serial.println("Data logged to: " + fileName);
 
@@ -1414,6 +1896,7 @@ void splitting(int nit_both,int phos_both,int potas_both){
     // do this
     nitro_split1 = nit_both * 0.30;
     phos_split1 = phos_both;
+    // Serial.println(phos_both);
 
     if (potas_both < 45) {
       potas_split1 = potas_both;
@@ -1432,8 +1915,11 @@ void splitting(int nit_both,int phos_both,int potas_both){
     nitro_split2 = nit_both * 0.30;
     phos_split2 = 0;
     potas_split2 = 0;
+    // Serial.println(nitro_split2);
+    // Serial.println(phos_split2);
+    // Serial.println(potas_split2);
   }
-  else if (button_selector_season == 0) {
+  else {
     // do this
     nitro_split2 = nit_both * 0.20;
     phos_split2 = 0;
@@ -1448,8 +1934,8 @@ void splitting(int nit_both,int phos_both,int potas_both){
     nitro_split3 = nit_both * 0.40;
     phos_split3 = 0;
     if (potas_split1 < 45) {
-      potas_split3 = potas_split1 * 0.50;
-    }
+      potas_split3 = potas_both * 0.50;
+    } 
     else{
       potas_split3 = potas_split1;
     }
@@ -1457,7 +1943,7 @@ void splitting(int nit_both,int phos_both,int potas_both){
     // Serial.println(phos_split3);
     // Serial.println(potas_split3);
   }
-  else if (button_selector_season == 0) {
+  else {
     // do this
     nitro_split3 = nit_both * 0.50;
     phos_split3 = 0;
@@ -1465,7 +1951,7 @@ void splitting(int nit_both,int phos_both,int potas_both){
       potas_split3 = potas_both * 0.50;
     }
     else {
-      potas_split3 = potas_both;
+      potas_split3 = potas_split1;
     }
     // Serial.println(nitro_split3);
     // Serial.println(phos_split3);
@@ -1478,7 +1964,6 @@ void splitting(int nit_both,int phos_both,int potas_both){
   // // Filterizer Contains
   // // 1st Application
   String value_fil;
-  float n_fil,p_fil,k_fil;
   if (nitro_split1 > 1 && phos_split1 > 1 && potas_split1 > 1){
       value_fil = "Complete, Triple 14";
       unsigned char N_fil[8] = {0x5A, 0xA5, 0x05, 0x82, 0x72, 0x00, 0x00, 0x00};
@@ -1488,9 +1973,9 @@ void splitting(int nit_both,int phos_both,int potas_both){
       p_fil = 7;
       k_fil = 7;
 
-      int n_fil_val = static_cast<int>(n_fil);  
-      int p_fil_val = static_cast<int>(p_fil);  
-      int k_fil_val = static_cast<int>(k_fil);  
+      n_fil_val = static_cast<int>(n_fil * 2);  
+      p_fil_val = static_cast<int>(p_fil * 2);  
+      k_fil_val = static_cast<int>(k_fil * 2);  
       /*------Send Data to Display------*/
       N_fil[6] = highByte(n_fil_val);
       N_fil[7] = lowByte(n_fil_val);
@@ -1513,9 +1998,9 @@ void splitting(int nit_both,int phos_both,int potas_both){
       n_fil = 8;
       p_fil = 10;
       k_fil = 0;
-      int n_fil_val = static_cast<int>(n_fil);  
-      int p_fil_val = static_cast<int>(p_fil);  
-      int k_fil_val = static_cast<int>(k_fil);  
+      n_fil_val = static_cast<int>(n_fil * 2);  
+      p_fil_val = static_cast<int>(p_fil * 2);  
+      k_fil_val = static_cast<int>(k_fil * 2);  
       /*------Send Data to Display------*/
       N_fil[6] = highByte(n_fil_val);
       N_fil[7] = lowByte(n_fil_val);
@@ -1538,9 +2023,9 @@ void splitting(int nit_both,int phos_both,int potas_both){
       n_fil = 0;
       p_fil = 10;
       k_fil = 0;
-      int n_fil_val = static_cast<int>(n_fil);  
-      int p_fil_val = static_cast<int>(p_fil);  
-      int k_fil_val = static_cast<int>(k_fil);  
+      n_fil_val = static_cast<int>(n_fil * 2);  
+      p_fil_val = static_cast<int>(p_fil * 2);  
+      k_fil_val = static_cast<int>(k_fil * 2);  
       /*------Send Data to Display------*/
       N_fil[6] = highByte(n_fil_val);
       N_fil[7] = lowByte(n_fil_val);
@@ -1563,9 +2048,9 @@ void splitting(int nit_both,int phos_both,int potas_both){
       n_fil = 0;
       p_fil = 0;
       k_fil = 30;
-      int n_fil_val = static_cast<int>(n_fil);  
-      int p_fil_val = static_cast<int>(p_fil);  
-      int k_fil_val = static_cast<int>(k_fil);  
+      n_fil_val = static_cast<int>(n_fil * 2);  
+      p_fil_val = static_cast<int>(p_fil * 2);  
+      k_fil_val = static_cast<int>(k_fil * 2);  
       /*------Send Data to Display------*/
       N_fil[6] = highByte(n_fil_val);
       N_fil[7] = lowByte(n_fil_val);
@@ -1591,9 +2076,9 @@ void splitting(int nit_both,int phos_both,int potas_both){
           n_fil = 23;
           p_fil = 0;
           k_fil = 0;
-          int n_fil_val = static_cast<int>(n_fil);  
-          int p_fil_val = static_cast<int>(p_fil);  
-          int k_fil_val = static_cast<int>(k_fil);  
+          n_fil_val = static_cast<int>(n_fil * 2);  
+          p_fil_val = static_cast<int>(p_fil * 2);  
+          k_fil_val = static_cast<int>(k_fil * 2);  
           /*------Send Data to Display------*/
           N_fil[6] = highByte(n_fil_val);
           N_fil[7] = lowByte(n_fil_val);
@@ -1619,9 +2104,9 @@ void splitting(int nit_both,int phos_both,int potas_both){
           n_fil = 10.5;
           p_fil = 0;
           k_fil = 0;
-          int n_fil_val = static_cast<int>(n_fil);  
-          int p_fil_val = static_cast<int>(p_fil);  
-          int k_fil_val = static_cast<int>(k_fil);  
+          n_fil_val = static_cast<int>(n_fil * 2);  
+          p_fil_val = static_cast<int>(p_fil * 2);  
+          k_fil_val = static_cast<int>(k_fil * 2);  
           /*------Send Data to Display------*/
           N_fil[6] = highByte(n_fil_val);
           N_fil[7] = lowByte(n_fil_val);
@@ -1652,7 +2137,7 @@ void splitting(int nit_both,int phos_both,int potas_both){
   float lowest_value1 = findLowestNonZero(result_dividen1, result_dividep1, result_dividek1);
   int low_first = static_cast<int>(lowest_value1);
   float decimal_part_first = lowest_value1 - static_cast<float>(low_first);
-  int decimal_as_int1 = static_cast<int>((decimal_part_first * 100.0) + 0.5);
+  int decimal_as_int1 = static_cast<int>((decimal_part_first * 100.0));
   // Serial.println(lowest_value1);
   // print value_fil, lowest_value1
   // Serial.println(n_fil);
@@ -1691,8 +2176,8 @@ void splitting(int nit_both,int phos_both,int potas_both){
   // Serial.println(result_minusk1);
 
   float divide2_decimal_first = static_cast<float>(decimal_as_int1) / 2.0;
-  int rounded_value1 = static_cast<int>(round(divide2_decimal_first));
-  int get_number1 = int(lowest_value1);
+  rounded_value1 = static_cast<int>(round(divide2_decimal_first));
+  get_number1 = int(lowest_value1);
   // Serial.println(get_number1);
   // Serial.println(rounded_value1);
   // bags
@@ -1708,9 +2193,6 @@ void splitting(int nit_both,int phos_both,int potas_both){
   DivideDecimal1[7] = lowByte(dividedecimal1);
   Serial2.write(DivideDecimal1, 8);
 
-  float n_fil_second;
-  float p_fil_second;
-  float k_fil_second;
   if (result_minusn1 != 0 && result_minusp1 != 0 && result_minusk1 != 0){
     Serial.println("All Values are Zero!");
   } else {
@@ -1722,9 +2204,9 @@ void splitting(int nit_both,int phos_both,int potas_both){
       n_fil_second = 7;
       p_fil_second = 7;
       k_fil_second = 7;
-      int n_fil_val_second = static_cast<int>(n_fil_second);  
-      int p_fil_val_second = static_cast<int>(p_fil_second);  
-      int k_fil_val_second = static_cast<int>(k_fil_second);  
+      n_fil_val_second = static_cast<int>(n_fil_second * 2);  
+      p_fil_val_second = static_cast<int>(p_fil_second * 2);  
+      k_fil_val_second = static_cast<int>(k_fil_second * 2);  
       /*------Send Data to Display------*/
       N_filSecond[6] = highByte(n_fil_val_second);
       N_filSecond[7] = lowByte(n_fil_val_second);
@@ -1747,9 +2229,9 @@ void splitting(int nit_both,int phos_both,int potas_both){
       n_fil_second = 8;
       p_fil_second = 10;
       k_fil_second = 0;
-      int n_fil_val_second = static_cast<int>(n_fil_second);  
-      int p_fil_val_second = static_cast<int>(p_fil_second);  
-      int k_fil_val_second = static_cast<int>(k_fil_second);  
+      n_fil_val_second = static_cast<int>(n_fil_second * 2);  
+      p_fil_val_second = static_cast<int>(p_fil_second * 2);  
+      k_fil_val_second = static_cast<int>(k_fil_second * 2);  
       /*------Send Data to Display------*/
       N_filSecond[6] = highByte(n_fil_val_second);
       N_filSecond[7] = lowByte(n_fil_val_second);
@@ -1772,9 +2254,9 @@ void splitting(int nit_both,int phos_both,int potas_both){
       n_fil_second = 0;
       p_fil_second = 10;
       k_fil_second = 0;
-      int n_fil_val_second = static_cast<int>(n_fil_second);  
-      int p_fil_val_second = static_cast<int>(p_fil_second);  
-      int k_fil_val_second = static_cast<int>(k_fil_second);  
+      n_fil_val_second = static_cast<int>(n_fil_second * 2);  
+      p_fil_val_second = static_cast<int>(p_fil_second * 2);  
+      k_fil_val_second = static_cast<int>(k_fil_second * 2);  
       /*------Send Data to Display------*/
       N_filSecond[6] = highByte(n_fil_val_second);
       N_filSecond[7] = lowByte(n_fil_val_second);
@@ -1797,9 +2279,9 @@ void splitting(int nit_both,int phos_both,int potas_both){
       n_fil_second = 0;
       p_fil_second = 0;
       k_fil_second = 30;
-      int n_fil_val_second = static_cast<int>(n_fil_second);  
-      int p_fil_val_second = static_cast<int>(p_fil_second);  
-      int k_fil_val_second = static_cast<int>(k_fil_second);  
+      n_fil_val_second = static_cast<int>(n_fil_second * 2);  
+      p_fil_val_second = static_cast<int>(p_fil_second * 2);  
+      k_fil_val_second = static_cast<int>(k_fil_second * 2);  
       /*------Send Data to Display------*/
       N_filSecond[6] = highByte(n_fil_val_second);
       N_filSecond[7] = lowByte(n_fil_val_second);
@@ -1822,9 +2304,9 @@ void splitting(int nit_both,int phos_both,int potas_both){
             n_fil_second = 23;
             p_fil_second = 0;
             k_fil_second = 0;
-            int n_fil_val_second = static_cast<int>(n_fil_second);  
-            int p_fil_val_second = static_cast<int>(p_fil_second);  
-            int k_fil_val_second = static_cast<int>(k_fil_second);  
+            n_fil_val_second = static_cast<int>(n_fil_second * 2);  
+            p_fil_val_second = static_cast<int>(p_fil_second * 2);  
+            k_fil_val_second = static_cast<int>(k_fil_second * 2);  
             /*------Send Data to Display------*/
             N_filSecond[6] = highByte(n_fil_val_second);
             N_filSecond[7] = lowByte(n_fil_val_second);
@@ -1848,9 +2330,9 @@ void splitting(int nit_both,int phos_both,int potas_both){
           n_fil_second = 10.5;
           p_fil_second = 0;
           k_fil_second = 0;
-          int n_fil_val_second = static_cast<int>(n_fil_second);  
-          int p_fil_val_second = static_cast<int>(p_fil_second);  
-          int k_fil_val_second = static_cast<int>(k_fil_second);  
+          n_fil_val_second = static_cast<int>(n_fil_second * 2);  
+          p_fil_val_second = static_cast<int>(p_fil_second * 2);  
+          k_fil_val_second = static_cast<int>(k_fil_second * 2);  
           /*------Send Data to Display------*/
           N_filSecond[6] = highByte(n_fil_val_second);
           N_filSecond[7] = lowByte(n_fil_val_second);
@@ -1882,7 +2364,7 @@ void splitting(int nit_both,int phos_both,int potas_both){
     float lowest_value_second = findLowestNonZero(result_divide_secondn1, result_divide_secondp1, result_divide_secondk1);
     int low_second = static_cast<int>(lowest_value_second);
     float decimal_part_second = lowest_value_second - static_cast<float>(low_second);
-    int decimal_as_int2 = static_cast<int>((decimal_part_second * 100.0) + 0.5);
+    int decimal_as_int2 = static_cast<int>((decimal_part_second * 100.0));
     // Serial.println(lowest_value_second);
     float result_multip_secondn1 = lowest_value_second * n_fil_second;
     float result_multip_secondp1 = lowest_value_second * p_fil_second;
@@ -1899,8 +2381,8 @@ void splitting(int nit_both,int phos_both,int potas_both){
     // Serial.println(result_minus_secondk1);
 
     float divide2_decimal_second = static_cast<float>(decimal_as_int2) / 2.0;
-    int rounded_value2 = static_cast<int>(round(divide2_decimal_second));
-    int get_number_second = int(lowest_value_second);
+    rounded_value2 = static_cast<int>(round(divide2_decimal_second));
+    get_number_second = int(lowest_value_second);
     // Serial.println(get_number_second);
     // Serial.println(rounded_value2);
     // Serial.println(get_number_second);
@@ -1918,9 +2400,6 @@ void splitting(int nit_both,int phos_both,int potas_both){
     DivideDecimal2[7] = lowByte(dividedecimal2);
     Serial2.write(DivideDecimal2, 8);
 
-    float n_fil_third;
-    float p_fil_third;
-    float k_fil_third;
     if (result_minus_secondn1 != 0 && result_minus_secondp1 != 0 && result_minus_secondk1 != 0){
       Serial.println("All Values are Zero!");
     } else {
@@ -1933,9 +2412,9 @@ void splitting(int nit_both,int phos_both,int potas_both){
         n_fil_third = 7;
         p_fil_third = 7;
         k_fil_third = 7;
-        int n_fil_val_third = static_cast<int>(n_fil_third);  
-        int p_fil_val_third = static_cast<int>(p_fil_third);  
-        int k_fil_val_third = static_cast<int>(k_fil_third);  
+        n_fil_val_third = static_cast<int>(n_fil_third * 2);  
+        p_fil_val_third = static_cast<int>(p_fil_third * 2);  
+        k_fil_val_third = static_cast<int>(k_fil_third * 2);  
         /*------Send Data to Display------*/
         N_filThird[6] = highByte(n_fil_val_third);
         N_filThird[7] = lowByte(n_fil_val_third);
@@ -1958,9 +2437,9 @@ void splitting(int nit_both,int phos_both,int potas_both){
         n_fil_third = 8;
         p_fil_third = 10;
         k_fil_third = 0;
-        int n_fil_val_third = static_cast<int>(n_fil_third);  
-        int p_fil_val_third = static_cast<int>(p_fil_third);  
-        int k_fil_val_third = static_cast<int>(k_fil_third);  
+        n_fil_val_third = static_cast<int>(n_fil_third * 2);  
+        p_fil_val_third = static_cast<int>(p_fil_third * 2);  
+        k_fil_val_third = static_cast<int>(k_fil_third * 2);  
         /*------Send Data to Display------*/
         N_filThird[6] = highByte(n_fil_val_third);
         N_filThird[7] = lowByte(n_fil_val_third);
@@ -1983,9 +2462,9 @@ void splitting(int nit_both,int phos_both,int potas_both){
         n_fil_third = 0;
         p_fil_third = 10;
         k_fil_third = 0;
-        int n_fil_val_third = static_cast<int>(n_fil_third);  
-        int p_fil_val_third = static_cast<int>(p_fil_third);  
-        int k_fil_val_third = static_cast<int>(k_fil_third);  
+        n_fil_val_third = static_cast<int>(n_fil_third * 2);  
+        p_fil_val_third = static_cast<int>(p_fil_third * 2);  
+        k_fil_val_third = static_cast<int>(k_fil_third * 2);  
         /*------Send Data to Display------*/
         N_filThird[6] = highByte(n_fil_val_third);
         N_filThird[7] = lowByte(n_fil_val_third);
@@ -2008,9 +2487,9 @@ void splitting(int nit_both,int phos_both,int potas_both){
         n_fil_third = 0;
         p_fil_third = 0;
         k_fil_third = 30;
-        int n_fil_val_third = static_cast<int>(n_fil_third);  
-        int p_fil_val_third = static_cast<int>(p_fil_third);  
-        int k_fil_val_third = static_cast<int>(k_fil_third);  
+        n_fil_val_third = static_cast<int>(n_fil_third * 2);  
+        p_fil_val_third = static_cast<int>(p_fil_third * 2);  
+        k_fil_val_third = static_cast<int>(k_fil_third * 2);  
         /*------Send Data to Display------*/
         N_filThird[6] = highByte(n_fil_val_third);
         N_filThird[7] = lowByte(n_fil_val_third);
@@ -2034,9 +2513,9 @@ void splitting(int nit_both,int phos_both,int potas_both){
               n_fil_third = 23;
               p_fil_third = 0;
               k_fil_third = 0;
-              int n_fil_val_third = static_cast<int>(n_fil_third);  
-              int p_fil_val_third = static_cast<int>(p_fil_third);  
-              int k_fil_val_third = static_cast<int>(k_fil_third);  
+              n_fil_val_third = static_cast<int>(n_fil_third * 2);  
+              p_fil_val_third = static_cast<int>(p_fil_third * 2);  
+              k_fil_val_third = static_cast<int>(k_fil_third * 2);  
               /*------Send Data to Display------*/
               N_filThird[6] = highByte(n_fil_val_third);
               N_filThird[7] = lowByte(n_fil_val_third);
@@ -2060,9 +2539,9 @@ void splitting(int nit_both,int phos_both,int potas_both){
             n_fil_third = 10.5;
             p_fil_third = 0;
             k_fil_third = 0;
-            int n_fil_val_third = static_cast<int>(n_fil_third);  
-            int p_fil_val_third = static_cast<int>(p_fil_third);  
-            int k_fil_val_third = static_cast<int>(k_fil_third);  
+            n_fil_val_third = static_cast<int>(n_fil_third * 2);  
+            p_fil_val_third = static_cast<int>(p_fil_third * 2);  
+            k_fil_val_third = static_cast<int>(k_fil_third * 2);  
             /*------Send Data to Display------*/
             N_filThird[6] = highByte(n_fil_val_third);
             N_filThird[7] = lowByte(n_fil_val_third);
@@ -2088,7 +2567,7 @@ void splitting(int nit_both,int phos_both,int potas_both){
       float lowest_value_third = findLowestNonZero(result_divide_thirdn1, result_divide_thirdp1, result_divide_thirdk1);
       int low_third = static_cast<int>(lowest_value_third);
       float decimal_part_third = lowest_value_third - static_cast<float>(low_third);
-      int decimal_as_int3 = static_cast<int>((decimal_part_third * 100.0) + 0.5);
+      int decimal_as_int3 = static_cast<int>((decimal_part_third * 100.0));
       
       float result_multip_thirdn1 = lowest_value_third * n_fil_third;
       float result_multip_thirdp1 = lowest_value_third * p_fil_third;
@@ -2101,8 +2580,8 @@ void splitting(int nit_both,int phos_both,int potas_both){
       // // Serial.println(result_minus_secondp1);
       // // Serial.println(result_minus_secondk1);
       float divide2_decimal_third = static_cast<float>(decimal_as_int3) / 2.0;
-      int rounded_value3 = static_cast<int>(round(divide2_decimal_third));
-      int get_number_third = int(lowest_value_third);
+      rounded_value3 = static_cast<int>(round(divide2_decimal_third));
+      get_number_third = int(lowest_value_third);
       // Serial.println(get_number_third);
       // Serial.println(rounded_value3);
       unsigned char GetNumber3[8] = {0x5A, 0xA5, 0x05, 0x82, 0x80, 0x00, 0x00, 0x00};
@@ -2118,10 +2597,9 @@ void splitting(int nit_both,int phos_both,int potas_both){
       Serial2.write(DivideDecimal3, 8);
     }
   }
-  Serial.println(nitro_split2);
-  Serial.println(phos_split2);
-  Serial.println(potas_split2);
-  float n_fil_split2,p_fil_split2,k_fil_split2;
+  // Serial.println(nitro_split2);
+  // Serial.println(phos_split2);
+  // Serial.println(potas_split2);
   if (nitro_split2 > 1 && phos_split2 > 1 && potas_split2 > 1){
     value_fil = "Complete, Triple 14";
     unsigned char N_filSplit2[8] = {0x5A, 0xA5, 0x05, 0x82, 0x87, 0x00, 0x00, 0x00};
@@ -2130,9 +2608,9 @@ void splitting(int nit_both,int phos_both,int potas_both){
     n_fil_split2 = 7;
     p_fil_split2 = 7;
     k_fil_split2 = 7;
-    int n_fil_val_split2 = static_cast<int>(n_fil_split2);  
-    int p_fil_val_split2 = static_cast<int>(p_fil_split2);  
-    int k_fil_val_split2 = static_cast<int>(k_fil_split2);  
+    n_fil_val_split2 = static_cast<int>(n_fil_split2 * 2);  
+    p_fil_val_split2 = static_cast<int>(p_fil_split2 * 2);  
+    k_fil_val_split2 = static_cast<int>(k_fil_split2 * 2);  
     /*------Send Data to Display------*/
     N_filSplit2[6] = highByte(n_fil_val_split2);
     N_filSplit2[7] = lowByte(n_fil_val_split2);
@@ -2154,9 +2632,9 @@ void splitting(int nit_both,int phos_both,int potas_both){
     n_fil_split2 = 8;
     p_fil_split2 = 10;
     k_fil_split2 = 0;
-    int n_fil_val_split2 = static_cast<int>(n_fil_split2);  
-    int p_fil_val_split2 = static_cast<int>(p_fil_split2);  
-    int k_fil_val_split2 = static_cast<int>(k_fil_split2);  
+    n_fil_val_split2 = static_cast<int>(n_fil_split2 * 2);  
+    p_fil_val_split2 = static_cast<int>(p_fil_split2 * 2);  
+    k_fil_val_split2 = static_cast<int>(k_fil_split2 * 2);  
     /*------Send Data to Display------*/
     N_filSplit2[6] = highByte(n_fil_val_split2);
     N_filSplit2[7] = lowByte(n_fil_val_split2);
@@ -2179,9 +2657,9 @@ void splitting(int nit_both,int phos_both,int potas_both){
     n_fil_split2 = 0;
     p_fil_split2 = 10;
     k_fil_split2 = 0;
-    int n_fil_val_split2 = static_cast<int>(n_fil_split2);  
-    int p_fil_val_split2 = static_cast<int>(p_fil_split2);  
-    int k_fil_val_split2 = static_cast<int>(k_fil_split2);  
+    n_fil_val_split2 = static_cast<int>(n_fil_split2 * 2);  
+    p_fil_val_split2 = static_cast<int>(p_fil_split2 * 2);  
+    k_fil_val_split2 = static_cast<int>(k_fil_split2 * 2);  
     /*------Send Data to Display------*/
     N_filSplit2[6] = highByte(n_fil_val_split2);
     N_filSplit2[7] = lowByte(n_fil_val_split2);
@@ -2203,9 +2681,9 @@ void splitting(int nit_both,int phos_both,int potas_both){
     n_fil_split2 = 0;
     p_fil_split2 = 0;
     k_fil_split2 = 30;
-    int n_fil_val_split2 = static_cast<int>(n_fil_split2);  
-    int p_fil_val_split2 = static_cast<int>(p_fil_split2);  
-    int k_fil_val_split2 = static_cast<int>(k_fil_split2);  
+    n_fil_val_split2 = static_cast<int>(n_fil_split2 * 2);  
+    p_fil_val_split2 = static_cast<int>(p_fil_split2 * 2);  
+    k_fil_val_split2 = static_cast<int>(k_fil_split2 * 2);  
     /*------Send Data to Display------*/
     N_filSplit2[6] = highByte(n_fil_val_split2);
     N_filSplit2[7] = lowByte(n_fil_val_split2);
@@ -2229,9 +2707,9 @@ void splitting(int nit_both,int phos_both,int potas_both){
           n_fil_split2 = 23;
           p_fil_split2 = 0;
           k_fil_split2 = 0;
-          int n_fil_val_split2 = static_cast<int>(n_fil_split2);  
-          int p_fil_val_split2 = static_cast<int>(p_fil_split2);  
-          int k_fil_val_split2 = static_cast<int>(k_fil_split2);  
+          n_fil_val_split2 = static_cast<int>(n_fil_split2 * 2);  
+          p_fil_val_split2 = static_cast<int>(p_fil_split2 * 2);  
+          k_fil_val_split2 = static_cast<int>(k_fil_split2 * 2);  
           /*------Send Data to Display------*/
           N_filSplit2[6] = highByte(n_fil_val_split2);
           N_filSplit2[7] = lowByte(n_fil_val_split2);
@@ -2255,9 +2733,9 @@ void splitting(int nit_both,int phos_both,int potas_both){
         n_fil_split2 = 10.5;
         p_fil_split2 = 0;
         k_fil_split2 = 0;
-        int n_fil_val_split2 = static_cast<int>(n_fil_split2);  
-        int p_fil_val_split2 = static_cast<int>(p_fil_split2);  
-        int k_fil_val_split2 = static_cast<int>(k_fil_split2);  
+        n_fil_val_split2 = static_cast<int>(n_fil_split2 * 2);  
+        p_fil_val_split2 = static_cast<int>(p_fil_split2 * 2);  
+        k_fil_val_split2 = static_cast<int>(k_fil_split2 * 2);  
         /*------Send Data to Display------*/
         N_filSplit2[6] = highByte(n_fil_val_split2);
         N_filSplit2[7] = lowByte(n_fil_val_split2);
@@ -2279,7 +2757,7 @@ void splitting(int nit_both,int phos_both,int potas_both){
   float lowest_value_split2 = findLowestNonZero(result_divide_splitn1, result_divide_splitp1, result_divide_splitk1);
   int low_split2 = static_cast<int>(lowest_value_split2);
   float decimal_part_split2 = lowest_value_split2 - static_cast<float>(low_split2);
-  int decimal_as_int4 = static_cast<int>((decimal_part_split2 * 100.0) + 0.5);
+  int decimal_as_int4 = static_cast<int>((decimal_part_split2 * 100.0));
 
   float result_multip_split2n1 = lowest_value_split2 * n_fil_split2;
   float result_multip_split2p1 = lowest_value_split2 * p_fil_split2;
@@ -2290,8 +2768,8 @@ void splitting(int nit_both,int phos_both,int potas_both){
   float result_minus_split2k1 = potas_split2 - result_multip_split2k1;
 
   float divide2_decimal_split2 = static_cast<float>(decimal_as_int4) / 2.0;
-  int rounded_value4 = static_cast<int>(round(divide2_decimal_split2));
-  int get_number_split2 = int(lowest_value_split2);
+  rounded_value4 = static_cast<int>(round(divide2_decimal_split2));
+  get_number_split2 = int(lowest_value_split2);
   
   // bags
   unsigned char GetNumber4[8] = {0x5A, 0xA5, 0x05, 0x82, 0x85, 0x00, 0x00, 0x00};
@@ -2310,7 +2788,6 @@ void splitting(int nit_both,int phos_both,int potas_both){
   if (result_minus_split2n1 != 0 && result_minus_split2p1 != 0 && result_minus_split2k1 != 0){
     Serial.println("All Values are Zero!");
   } else {
-    float n_fil_split2_second,p_fil_split2_second,k_fil_split2_second;
     if (result_minus_split2n1 > 1 && result_minus_split2p1 > 1 && result_minus_split2k1 > 1){
       value_fil = "Complete, Triple 14";
       unsigned char N_filSplit2_Second[8] = {0x5A, 0xA5, 0x05, 0x82, 0x92, 0x00, 0x00, 0x00};
@@ -2319,9 +2796,9 @@ void splitting(int nit_both,int phos_both,int potas_both){
       n_fil_split2_second = 7;
       p_fil_split2_second = 7;
       k_fil_split2_second = 7;
-      int n_fil_val_split2_second = static_cast<int>(n_fil_split2_second);  
-      int p_fil_val_split2_second = static_cast<int>(p_fil_split2_second);  
-      int k_fil_val_split2_second = static_cast<int>(k_fil_split2_second);  
+      n_fil_val_split2_second = static_cast<int>(n_fil_split2_second * 2);  
+      p_fil_val_split2_second = static_cast<int>(p_fil_split2_second * 2);  
+      k_fil_val_split2_second = static_cast<int>(k_fil_split2_second * 2);  
       /*------Send Data to Display------*/
       N_filSplit2_Second[6] = highByte(n_fil_val_split2_second);
       N_filSplit2_Second[7] = lowByte(n_fil_val_split2_second);
@@ -2343,9 +2820,9 @@ void splitting(int nit_both,int phos_both,int potas_both){
       n_fil_split2_second = 8;
       p_fil_split2_second = 10;
       k_fil_split2_second = 0;
-      int n_fil_val_split2_second = static_cast<int>(n_fil_split2_second);  
-      int p_fil_val_split2_second = static_cast<int>(p_fil_split2_second);  
-      int k_fil_val_split2_second = static_cast<int>(k_fil_split2_second);  
+      n_fil_val_split2_second = static_cast<int>(n_fil_split2_second * 2);  
+      p_fil_val_split2_second = static_cast<int>(p_fil_split2_second * 2);  
+      k_fil_val_split2_second = static_cast<int>(k_fil_split2_second * 2);  
       /*------Send Data to Display------*/
       N_filSplit2_Second[6] = highByte(n_fil_val_split2_second);
       N_filSplit2_Second[7] = lowByte(n_fil_val_split2_second);
@@ -2368,13 +2845,10 @@ void splitting(int nit_both,int phos_both,int potas_both){
       n_fil_split2_second = 0;
       p_fil_split2_second = 10;
       k_fil_split2_second = 0;
-      int n_fil_val_split2 = static_cast<int>(n_fil_split2_second);  
-      int p_fil_val_split2 = static_cast<int>(p_fil_split2_second);  
-      int k_fil_val_split2 = static_cast<int>(k_fil_split2_second);  
       /*------Send Data to Display------*/
-      int n_fil_val_split2_second = static_cast<int>(n_fil_split2_second);  
-      int p_fil_val_split2_second = static_cast<int>(p_fil_split2_second);  
-      int k_fil_val_split2_second = static_cast<int>(k_fil_split2_second);  
+      n_fil_val_split2_second = static_cast<int>(n_fil_split2_second * 2);  
+      p_fil_val_split2_second = static_cast<int>(p_fil_split2_second * 2);  
+      k_fil_val_split2_second = static_cast<int>(k_fil_split2_second * 2);  
       /*------Send Data to Display------*/
       N_filSplit2_Second[6] = highByte(n_fil_val_split2_second);
       N_filSplit2_Second[7] = lowByte(n_fil_val_split2_second);
@@ -2396,9 +2870,9 @@ void splitting(int nit_both,int phos_both,int potas_both){
       n_fil_split2_second = 0;
       p_fil_split2_second = 0;
       k_fil_split2_second = 30;
-      int n_fil_val_split2_second = static_cast<int>(n_fil_split2_second);  
-      int p_fil_val_split2_second = static_cast<int>(p_fil_split2_second);  
-      int k_fil_val_split2_second = static_cast<int>(k_fil_split2_second);  
+      n_fil_val_split2_second = static_cast<int>(n_fil_split2_second * 2);  
+      p_fil_val_split2_second = static_cast<int>(p_fil_split2_second * 2);  
+      k_fil_val_split2_second = static_cast<int>(k_fil_split2_second * 2);  
       /*------Send Data to Display------*/
       N_filSplit2_Second[6] = highByte(n_fil_val_split2_second);
       N_filSplit2_Second[7] = lowByte(n_fil_val_split2_second);
@@ -2422,9 +2896,9 @@ void splitting(int nit_both,int phos_both,int potas_both){
             n_fil_split2_second = 23;
             p_fil_split2_second = 0;
             k_fil_split2_second = 0;
-            int n_fil_val_split2_second = static_cast<int>(n_fil_split2_second);  
-            int p_fil_val_split2_second = static_cast<int>(p_fil_split2_second);  
-            int k_fil_val_split2_second = static_cast<int>(k_fil_split2_second);  
+            n_fil_val_split2_second = static_cast<int>(n_fil_split2_second * 2);  
+            p_fil_val_split2_second = static_cast<int>(p_fil_split2_second * 2);  
+            k_fil_val_split2_second = static_cast<int>(k_fil_split2_second * 2);  
             /*------Send Data to Display------*/
             N_filSplit2_Second[6] = highByte(n_fil_val_split2_second);
             N_filSplit2_Second[7] = lowByte(n_fil_val_split2_second);
@@ -2448,9 +2922,9 @@ void splitting(int nit_both,int phos_both,int potas_both){
           n_fil_split2_second = 10.5;
           p_fil_split2_second = 0;
           k_fil_split2_second = 0;
-          int n_fil_val_split2_second = static_cast<int>(n_fil_split2_second);  
-          int p_fil_val_split2_second = static_cast<int>(p_fil_split2_second);  
-          int k_fil_val_split2_second = static_cast<int>(k_fil_split2_second);  
+          n_fil_val_split2_second = static_cast<int>(n_fil_split2_second * 2);  
+          p_fil_val_split2_second = static_cast<int>(p_fil_split2_second * 2);  
+          k_fil_val_split2_second = static_cast<int>(k_fil_split2_second * 2);  
           /*------Send Data to Display------*/
           N_filSplit2_Second[6] = highByte(n_fil_val_split2_second);
           N_filSplit2_Second[7] = lowByte(n_fil_val_split2_second);
@@ -2472,7 +2946,7 @@ void splitting(int nit_both,int phos_both,int potas_both){
     float lowest_value_split2_second = findLowestNonZero(result_divide_splitn1_second, result_divide_splitp1_second, result_divide_splitk1_second);
     int low_split2_second = static_cast<int>(lowest_value_split2_second);
     float decimal_part_split2 = lowest_value_split2_second - static_cast<float>(low_split2_second);
-    int decimal_as_int5 = static_cast<int>((decimal_part_split2 * 100.0) + 0.5);
+    int decimal_as_int5 = static_cast<int>((decimal_part_split2 * 100.0));
 
     float result_multip_split2n1_second = lowest_value_split2_second * n_fil_split2_second;
     float result_multip_split2p1_second = lowest_value_split2_second * p_fil_split2_second;
@@ -2483,8 +2957,8 @@ void splitting(int nit_both,int phos_both,int potas_both){
     float result_minus_split2k1_final = result_minus_split2k1 - result_multip_split2k1_second;
 
     float divide2_decimal_split2_second = static_cast<float>(decimal_as_int5) / 2.0;
-    int rounded_value5 = static_cast<int>(round(divide2_decimal_split2_second));
-    int get_number_split2_second = int(lowest_value_split2_second);
+    rounded_value5 = static_cast<int>(round(divide2_decimal_split2_second));
+    get_number_split2_second = int(lowest_value_split2_second);
     
     // bags
     unsigned char GetNumber5[8] = {0x5A, 0xA5, 0x05, 0x82, 0x90, 0x00, 0x00, 0x00};
@@ -2499,10 +2973,9 @@ void splitting(int nit_both,int phos_both,int potas_both){
     DivideDecimal5[7] = lowByte(dividedecimal5);
     Serial2.write(DivideDecimal5, 8);
   }
-  Serial.println(nitro_split3);
-  Serial.println(phos_split3);
-  Serial.println(potas_split3);
-  float n_fil_split3,p_fil_split3,k_fil_split3;
+  // Serial.println(nitro_split3);
+  // Serial.println(phos_split3);
+  // Serial.println(potas_split3);
   if (nitro_split3 > 1 && phos_split3 > 1 && potas_split3 > 1){
     value_fil = "Complete, Triple 14";
     unsigned char N_filSplit3[8] = {0x5A, 0xA5, 0x05, 0x82, 0x96, 0x00, 0x00, 0x00};
@@ -2511,9 +2984,9 @@ void splitting(int nit_both,int phos_both,int potas_both){
     n_fil_split3 = 7;
     p_fil_split3 = 7;
     k_fil_split3 = 7;
-    int n_fil_val_split3 = static_cast<int>(n_fil_split3);  
-    int p_fil_val_split3 = static_cast<int>(p_fil_split3);  
-    int k_fil_val_split3 = static_cast<int>(k_fil_split3);  
+    n_fil_val_split3 = static_cast<int>(n_fil_split3 * 2);  
+    p_fil_val_split3 = static_cast<int>(p_fil_split3 * 2);  
+    k_fil_val_split3 = static_cast<int>(k_fil_split3 * 2);  
     /*------Send Data to Display------*/
     N_filSplit3[6] = highByte(n_fil_val_split3);
     N_filSplit3[7] = lowByte(n_fil_val_split3);
@@ -2536,9 +3009,9 @@ void splitting(int nit_both,int phos_both,int potas_both){
     n_fil_split3 = 8;
     p_fil_split3 = 10;
     k_fil_split3 = 0;
-    int n_fil_val_split3 = static_cast<int>(n_fil_split3);  
-    int p_fil_val_split3 = static_cast<int>(p_fil_split3);  
-    int k_fil_val_split3 = static_cast<int>(k_fil_split3);  
+    n_fil_val_split3 = static_cast<int>(n_fil_split3 * 2);  
+    p_fil_val_split3 = static_cast<int>(p_fil_split3 * 2);  
+    k_fil_val_split3 = static_cast<int>(k_fil_split3 * 2);  
     /*------Send Data to Display------*/
     N_filSplit3[6] = highByte(n_fil_val_split3);
     N_filSplit3[7] = lowByte(n_fil_val_split3);
@@ -2561,9 +3034,9 @@ void splitting(int nit_both,int phos_both,int potas_both){
     n_fil_split3 = 0;
     p_fil_split3 = 10;
     k_fil_split3 = 0;
-    int n_fil_val_split3 = static_cast<int>(n_fil_split3);  
-    int p_fil_val_split3 = static_cast<int>(p_fil_split3);  
-    int k_fil_val_split3 = static_cast<int>(k_fil_split3);  
+    n_fil_val_split3 = static_cast<int>(n_fil_split3 * 2);  
+    p_fil_val_split3 = static_cast<int>(p_fil_split3 * 2);  
+    k_fil_val_split3 = static_cast<int>(k_fil_split3 * 2);  
     /*------Send Data to Display------*/
     N_filSplit3[6] = highByte(n_fil_val_split3);
     N_filSplit3[7] = lowByte(n_fil_val_split3);
@@ -2585,9 +3058,9 @@ void splitting(int nit_both,int phos_both,int potas_both){
     n_fil_split3 = 0;
     p_fil_split3 = 0;
     k_fil_split3 = 30;
-    int n_fil_val_split3 = static_cast<int>(n_fil_split3);  
-    int p_fil_val_split3 = static_cast<int>(p_fil_split3);  
-    int k_fil_val_split3 = static_cast<int>(k_fil_split3);  
+    n_fil_val_split3 = static_cast<int>(n_fil_split3 * 2);  
+    p_fil_val_split3 = static_cast<int>(p_fil_split3 * 2);  
+    k_fil_val_split3 = static_cast<int>(k_fil_split3 * 2);  
     /*------Send Data to Display------*/
     N_filSplit3[6] = highByte(n_fil_val_split3);
     N_filSplit3[7] = lowByte(n_fil_val_split3);
@@ -2612,9 +3085,9 @@ void splitting(int nit_both,int phos_both,int potas_both){
           n_fil_split3 = 23;
           p_fil_split3 = 0;
           k_fil_split3 = 0;
-          int n_fil_val_split3 = static_cast<int>(n_fil_split3);  
-          int p_fil_val_split3 = static_cast<int>(p_fil_split3);  
-          int k_fil_val_split3 = static_cast<int>(k_fil_split3);  
+          n_fil_val_split3 = static_cast<int>(n_fil_split3 * 2);  
+          p_fil_val_split3 = static_cast<int>(p_fil_split3 * 2);  
+          k_fil_val_split3 = static_cast<int>(k_fil_split3 * 2);  
           /*------Send Data to Display------*/
           N_filSplit3[6] = highByte(n_fil_val_split3);
           N_filSplit3[7] = lowByte(n_fil_val_split3);
@@ -2638,9 +3111,9 @@ void splitting(int nit_both,int phos_both,int potas_both){
         n_fil_split3 = 10.5;
         p_fil_split3 = 0;
         k_fil_split3 = 0;
-        int n_fil_val_split3 = static_cast<int>(n_fil_split3);  
-        int p_fil_val_split3 = static_cast<int>(p_fil_split3);  
-        int k_fil_val_split3 = static_cast<int>(k_fil_split3);  
+        n_fil_val_split3 = static_cast<int>(n_fil_split3 * 2);  
+        p_fil_val_split3 = static_cast<int>(p_fil_split3 * 2);  
+        k_fil_val_split3 = static_cast<int>(k_fil_split3 * 2);  
         /*------Send Data to Display------*/
         N_filSplit3[6] = highByte(n_fil_val_split3);
         N_filSplit3[7] = lowByte(n_fil_val_split3);
@@ -2662,7 +3135,7 @@ void splitting(int nit_both,int phos_both,int potas_both){
   float lowest_value_split3 = findLowestNonZero(result_divide_split3n1, result_divide_split3p1, result_divide_split3k1);
   int low_split3 = static_cast<int>(lowest_value_split3);
   float decimal_part_split3 = lowest_value_split3 - static_cast<float>(low_split3);
-  int decimal_as_int6 = static_cast<int>((decimal_part_split3 * 100.0) + 0.5);
+  int decimal_as_int6 = static_cast<int>((decimal_part_split3 * 100.0));
 
   float result_multip_split3n1 = lowest_value_split3 * n_fil_split3;
   float result_multip_split3p1 = lowest_value_split3 * p_fil_split3;
@@ -2673,8 +3146,8 @@ void splitting(int nit_both,int phos_both,int potas_both){
   float result_minus_split3k1 = potas_split3 - result_multip_split3k1;
 
   float divide2_decimal_split3 = static_cast<float>(decimal_as_int6) / 2.0;
-  int rounded_value6 = static_cast<int>(round(divide2_decimal_split3));
-  int get_number_split3 = int(lowest_value_split3);
+  rounded_value6 = static_cast<int>(round(divide2_decimal_split3));
+  get_number_split3 = int(lowest_value_split3);
   // Serial.println(get_number_split3);
   // Serial.println(rounded_value6);
   // bags
@@ -2694,7 +3167,6 @@ void splitting(int nit_both,int phos_both,int potas_both){
   if (result_minus_split3n1 != 0 && result_minus_split3p1 != 0 && result_minus_split3k1 != 0){
     Serial.println("All Values are Zero!");
   } else {
-    float n_fil_split3_second,p_fil_split3_second,k_fil_split3_second;
     if (result_minus_split3n1 > 1 && result_minus_split3p1 > 1 && result_minus_split3k1 > 1){
       value_fil = "Complete, Triple 14";
       unsigned char N_filSplit3_Second[8] = {0x5A, 0xA5, 0x05, 0x82, 0x12, 0x00, 0x00, 0x00};
@@ -2703,9 +3175,9 @@ void splitting(int nit_both,int phos_both,int potas_both){
       n_fil_split3_second = 7;
       p_fil_split3_second = 7;
       k_fil_split3_second = 7;
-      int n_fil_val_split3_second = static_cast<int>(n_fil_split3_second);  
-      int p_fil_val_split3_second = static_cast<int>(p_fil_split3_second);  
-      int k_fil_val_split3_second = static_cast<int>(k_fil_split3_second);  
+      n_fil_val_split3_second = static_cast<int>(n_fil_split3_second * 2);  
+      p_fil_val_split3_second = static_cast<int>(p_fil_split3_second * 2);  
+      k_fil_val_split3_second = static_cast<int>(k_fil_split3_second * 2);  
       /*------Send Data to Display------*/
       N_filSplit3_Second[6] = highByte(n_fil_val_split3_second);
       N_filSplit3_Second[7] = lowByte(n_fil_val_split3_second);
@@ -2727,9 +3199,9 @@ void splitting(int nit_both,int phos_both,int potas_both){
       n_fil_split3_second = 8;
       p_fil_split3_second = 10;
       k_fil_split3_second = 0;
-      int n_fil_val_split3_second = static_cast<int>(n_fil_split3_second);  
-      int p_fil_val_split3_second = static_cast<int>(p_fil_split3_second);  
-      int k_fil_val_split3_second = static_cast<int>(k_fil_split3_second);  
+      n_fil_val_split3_second = static_cast<int>(n_fil_split3_second * 2);  
+      p_fil_val_split3_second = static_cast<int>(p_fil_split3_second * 2);  
+      k_fil_val_split3_second = static_cast<int>(k_fil_split3_second * 2);  
       /*------Send Data to Display------*/
       N_filSplit3_Second[6] = highByte(n_fil_val_split3_second);
       N_filSplit3_Second[7] = lowByte(n_fil_val_split3_second);
@@ -2752,9 +3224,9 @@ void splitting(int nit_both,int phos_both,int potas_both){
       n_fil_split3_second = 0;
       p_fil_split3_second = 10;
       k_fil_split3_second = 0;
-      int n_fil_val_split3_second = static_cast<int>(n_fil_split3_second);  
-      int p_fil_val_split3_second = static_cast<int>(p_fil_split3_second);  
-      int k_fil_val_split3_second = static_cast<int>(k_fil_split3_second);  
+      n_fil_val_split3_second = static_cast<int>(n_fil_split3_second * 2);  
+      p_fil_val_split3_second = static_cast<int>(p_fil_split3_second * 2);  
+      k_fil_val_split3_second = static_cast<int>(k_fil_split3_second * 2);  
       /*------Send Data to Display------*/
       N_filSplit3_Second[6] = highByte(n_fil_val_split3_second);
       N_filSplit3_Second[7] = lowByte(n_fil_val_split3_second);
@@ -2776,9 +3248,9 @@ void splitting(int nit_both,int phos_both,int potas_both){
       n_fil_split3_second = 0;
       p_fil_split3_second = 0;
       k_fil_split3_second = 30;
-      int n_fil_val_split3_second = static_cast<int>(n_fil_split3_second);  
-      int p_fil_val_split3_second = static_cast<int>(p_fil_split3_second);  
-      int k_fil_val_split3_second = static_cast<int>(k_fil_split3_second);  
+      n_fil_val_split3_second = static_cast<int>(n_fil_split3_second * 2);  
+      p_fil_val_split3_second = static_cast<int>(p_fil_split3_second * 2);  
+      k_fil_val_split3_second = static_cast<int>(k_fil_split3_second * 2);  
       /*------Send Data to Display------*/
       N_filSplit3_Second[6] = highByte(n_fil_val_split3_second);
       N_filSplit3_Second[7] = lowByte(n_fil_val_split3_second);
@@ -2801,9 +3273,9 @@ void splitting(int nit_both,int phos_both,int potas_both){
           n_fil_split3_second = 23;
           p_fil_split3_second = 0;
           k_fil_split3_second = 0;
-          int n_fil_val_split3_second = static_cast<int>(n_fil_split3_second);  
-          int p_fil_val_split3_second = static_cast<int>(p_fil_split3_second);  
-          int k_fil_val_split3_second = static_cast<int>(k_fil_split3_second);  
+          n_fil_val_split3_second = static_cast<int>(n_fil_split3_second * 2);  
+          p_fil_val_split3_second = static_cast<int>(p_fil_split3_second * 2);  
+          k_fil_val_split3_second = static_cast<int>(k_fil_split3_second * 2);  
           /*------Send Data to Display------*/
           N_filSplit3_Second[6] = highByte(n_fil_val_split3_second);
           N_filSplit3_Second[7] = lowByte(n_fil_val_split3_second);
@@ -2827,9 +3299,9 @@ void splitting(int nit_both,int phos_both,int potas_both){
         n_fil_split3_second = 10.5;
         p_fil_split3_second = 0;
         k_fil_split3_second = 0;
-        int n_fil_val_split3_second = static_cast<int>(n_fil_split3_second);  
-        int p_fil_val_split3_second = static_cast<int>(p_fil_split3_second);  
-        int k_fil_val_split3_second = static_cast<int>(k_fil_split3_second);  
+        n_fil_val_split3_second = static_cast<int>(n_fil_split3_second * 2);  
+        p_fil_val_split3_second = static_cast<int>(p_fil_split3_second * 2);  
+        k_fil_val_split3_second = static_cast<int>(k_fil_split3_second * 2);  
         /*------Send Data to Display------*/
         N_filSplit3_Second[6] = highByte(n_fil_val_split3_second);
         N_filSplit3_Second[7] = lowByte(n_fil_val_split3_second);
@@ -2844,16 +3316,21 @@ void splitting(int nit_both,int phos_both,int potas_both){
         Serial2.write(K_filSplit3_Second, 8);
       }
     }
-    float result_divide_split3n1_second = (n_fil_split3_second != 0.0) ? (result_minus_split3n1 / n_fil_split3_second) : 0.0;;
+    float result_divide_split3n1_second = (n_fil_split3_second != 0.0) ? (result_minus_split3n1 / n_fil_split3_second) : 0.0;
+    
     float result_divide_split3p1_second = (p_fil_split3_second != 0.0) ? (result_minus_split3p1 / p_fil_split3_second) : 0.0;
+
     float result_divide_split3k1_second = (k_fil_split3_second != 0.0) ? (result_minus_split3k1 / k_fil_split3_second) : 0.0;
+
     // Serial.println(result_minus_split3n1);
     // Serial.println(result_minus_split3p1);
+    // Serial.println(k_fil_split3_second);
     // Serial.println(result_minus_split3k1);
     float lowest_value_split3_second = findLowestNonZero(result_divide_split3n1_second, result_divide_split3p1_second, result_divide_split3k1_second);
+    // Serial.println(result_minus_split3k1);
     int low_split3_second = static_cast<int>(lowest_value_split3_second);
     float decimal_part_split2 = lowest_value_split3_second - static_cast<float>(low_split3_second);
-    int decimal_as_int7 = static_cast<int>((decimal_part_split2 * 100.0) + 0.5);
+    int decimal_as_int7 = static_cast<int>((decimal_part_split2 * 100.0));
 
     float result_multip_split3n1_second = lowest_value_split3_second * n_fil_split3_second;
     float result_multip_split3p1_second = lowest_value_split3_second * p_fil_split3_second;
@@ -2864,8 +3341,8 @@ void splitting(int nit_both,int phos_both,int potas_both){
     float result_minus_split3k1_final = result_minus_split3k1 - result_multip_split3k1_second;
 
     float divide2_decimal_split3_second = static_cast<float>(decimal_as_int7) / 2.0;
-    int rounded_value7 = static_cast<int>(round(divide2_decimal_split3_second));
-    int get_number_split3_second = int(lowest_value_split3_second);
+    rounded_value7 = static_cast<int>(round(divide2_decimal_split3_second));
+    get_number_split3_second = int(lowest_value_split3_second);
     // Serial.println(get_number_split3_second);
     // Serial.println(rounded_value7);
     // bags
@@ -2930,12 +3407,10 @@ void setup() {
   printer.begin();
 
   // SD Card initialization
-  if (SD.begin(chipSelect)) {
-    Serial.println("SD card initialized successfully.");
-  } else {
-    Serial.println("SD card initialization failed. Check your connections.");
-    return;
+  if (!SD.begin(chipSelect)) {
+    Serial.println("Card failed, or not present");
   }
+  Serial.println("card initialized.");
   
 
 
@@ -2983,11 +3458,11 @@ void npkSense(){
     phos = phosphorus * 0.1653;
     potas =  (potassium  / 39.0983) * 0.047;
 
-    int n = static_cast<int>(nitro * 100);  
-    int ps = static_cast<int>(phos * 100);  
-    int k = static_cast<int>(potas * 100);
-    int ph = static_cast<int>(pH * 100);
-    int e = static_cast<int>(ec * 100);
+    int n = static_cast<int>(nitro * 100) + 1;  
+    int ps = static_cast<int>(phos * 100) + 1;  
+    int k = static_cast<int>(potas * 100) + 1;
+    int ph = static_cast<int>(pH * 100) + 1;
+    int e = static_cast<int>(ec * 100) + 1;
     int m = static_cast<int>(moisture * 100);
 
 
@@ -3185,7 +3660,6 @@ void printData(String prefix){
     printWithSpace(printer, "   EC-------------", ec, "mS/cm");
     printWithSpace(printer, "   Moisture-------", moisture, "%");
 
-
     printer.println("--------------------------------");
     printer.justify('C'); // center the image
     printer.boldOn();
@@ -3221,16 +3695,102 @@ void printData(String prefix){
     printCenteredText(printer, basal);
 
     printer.println();
-
     const char *topdressing1 = "1st TopDressing(5-7 DAT):";
+    printer.println();
     printCenteredText(printer, topdressing1);
     printer.println();
+    printer.print(get_number1);
+    printer.print(" bags ");
+    printer.print(rounded_value1);
+    printer.println(" kg");
+
+    printer.print(n_fil_val);
+    printer.print("-");
+    printer.print(p_fil_val);
+    printer.print("-");
+    printer.print(k_fil_val);
+    printer.println();
+
+    printer.print(get_number_second);
+    printer.print(" bags ");
+    printer.print(rounded_value2);
+    printer.println(" kg");
+
+    printer.print(n_fil_val_second);
+    printer.print("-");
+    printer.print(p_fil_val_second);
+    printer.print("-");
+    printer.print(k_fil_val_second);
+    printer.println();
+
+    printer.print(get_number_third);
+    printer.print(" bags ");
+    printer.print(rounded_value3);
+    printer.println(" kg");
+
+    printer.print(n_fil_val_third);
+    printer.print("-");
+    printer.print(p_fil_val_third);
+    printer.print("-");
+    printer.print(k_fil_val_third);
+
     const char *topdressing2 = "2nd TopDressing(20-24 DAT):";
+    printer.println();
     printCenteredText(printer, topdressing2);
     printer.println();
+    printer.print(get_number_split2);
+    printer.print(" bags ");
+    printer.print(rounded_value4);
+    printer.println(" kg");
+
+    printer.print(n_fil_val_split2);
+    printer.print("-");
+    printer.print(p_fil_val_split2);
+    printer.print("-");
+    printer.print(k_fil_val_split2);
+    printer.println();
+
+    printer.print(get_number_split2_second);
+    printer.print(" bags ");
+    printer.print(rounded_value5);
+    printer.println(" kg");
+
+    printer.print(n_fil_val_split2_second);
+    printer.print("-");
+    printer.print(p_fil_val_split2_second);
+    printer.print("-");
+    printer.print(k_fil_val_split2_second);
+    printer.println();
+
     const char *topdressing3 = "3rd TopDressing(30-35 DAT):";
+    printer.println();
     printCenteredText(printer, topdressing3);
     printer.println();
+    printer.print(get_number_split3);
+    printer.print(" bags ");
+    printer.print(rounded_value6);
+    printer.println(" kg");
+
+    printer.print(n_fil_val_split3);
+    printer.print("-");
+    printer.print(p_fil_val_split3);
+    printer.print("-");
+    printer.print(k_fil_val_split3);
+    printer.println();
+
+    printer.print(get_number_split3_second);
+    printer.print(" bags ");
+    printer.print(rounded_value7);
+    printer.println(" kg");
+
+    printer.print(n_fil_val_split3_second);
+    printer.print("-");
+    printer.print(p_fil_val_split3_second);
+    printer.print("-");
+    printer.print(k_fil_val_split3_second);
+    printer.println();
+
+
 
     printer.justify('C');
     printer.setSize('S');
