@@ -46,5 +46,5 @@ https://mischianti.org/images-to-byte-array-online-converter-cpp-arduino/
 https://forum.arduino.cc/t/printing-image-with-thermal-printer/864154/4
 https://learn.adafruit.com/mini-thermal-receipt-printer/microcontroller
 ## GUIDE FOR DWIN_LCD
-### This is refer to configure DWIN LCD
+### DwinLCD Manual Guide
 https://github.com/mj4w/NPK/blob/main/T5L_DGUSII-Application-Development-Guide-20220520.pdf
