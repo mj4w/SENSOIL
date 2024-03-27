@@ -21,9 +21,9 @@
 │   └── ProductManual.docx
 ```
 ### Prototype Design
-<a href="https://ibb.co/Fxbndjx"><img src="https://i.ibb.co/TvBrNFv/432583698-397630283218595-6910261040939549693-n.jpg" alt="432583698-397630283218595-6910261040939549693-n" border="0"></a>
+<a href="https://ibb.co/TRWSGqY"><img src="https://i.ibb.co/GkHLD3n/SENSOIL-PROTOTYPE.png" alt="SENSOIL-PROTOTYPE" border="0"></a>
 ### Schematic
-<a href="https://ibb.co/fdBNsYJ"><img src="https://i.ibb.co/YBYdx7g/schematic-sample-img.png" alt="schematic-sample-img" border="0"></a>
+<a href="https://ibb.co/zhs5d4V"><img src="https://i.ibb.co/tMBhRJp/SENSOIL-SCHEMATIC.png" alt="SENSOIL-SCHEMATIC" border="0"></a>
 # DEFINITION
 * <strong>A_printertest</strong> - guide for printer <br/>
 * <strong>CoolTerm</strong> <br/>
