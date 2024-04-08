@@ -632,8 +632,7 @@ void dwinListen(){
 
 
 
-    printData(prefix);
-    Serial.println(prefix);
+    printDataNow();
     switches();
     while (Serial2.available()) {
         int inhex = Serial2.read();
@@ -1158,7 +1157,7 @@ void printWithSpace(Adafruit_Thermal &printer, const char *parameter, float valu
   for (int i = 0; i < spaces; i++) {
     printer.print(" ");
   }
-  printer.print(value, 2);
+  printer.print(value);
   printer.print(unit);
   printer.println();
 }
@@ -1458,10 +1457,10 @@ void electrical_conductivity(float ec){
 }
 void moisture_(float moisture){
     // Moisture
-  if (moisture <= 15){
+  if (moisture >= 0 && moisture <= 39){
     mois_value = "LOW"; 
   }
-  else if (moisture >= 60 && moisture <= 20){
+  else if (moisture >= 40 && moisture <= 80){
     mois_value = "SUFFICIENT";
   } else {
     mois_value = "HIGH";
@@ -1473,11 +1472,11 @@ void moisture_(float moisture){
   Serial.print("Moisture Value: ");
   Serial.print(mois_value);
   Serial.println();
-  if (moisture <= 19){
+  if (moisture >= 0 && moisture <= 39){
     unsigned char Moisture[] = {0x5A,0xA5,0x10,0x82,0x17,0x00,0x2D,0x2D,0x2D,0x2D,0x2D,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D,0x2D};
     Serial2.write(Moisture,19);
   }
-  else if (moisture >= 60 && moisture <= 20){
+  else if (moisture >= 40 && moisture <= 80){
     unsigned char Moisture[] = {0x5A,0xA5,0x10,0x82,0x17,0x00,0x2D,0x53,0x55,0x46,0x46,0x49,0x43,0x49,0x45,0x4E,0x54,0x2D,0x2D};
     Serial2.write(Moisture,19);
   } else {
@@ -1950,9 +1949,9 @@ void inbred_nitrogen_hds(float nitro){
 
 // Splitting Nutrient Recommendation
 void splitting(int nit_both,int phos_both,int potas_both){
-  int nitro_split1,phos_split1,potas_split1;
-  int nitro_split2,phos_split2,potas_split2;
-  int nitro_split3,phos_split3,potas_split3;
+  float nitro_split1,phos_split1,potas_split1;
+  float nitro_split2,phos_split2,potas_split2;
+  float nitro_split3,phos_split3,potas_split3;
   // Serial.println(nit_both);
   // Serial.println(phos_both);
   // Serial.println(potas_both);
@@ -1972,9 +1971,9 @@ void splitting(int nit_both,int phos_both,int potas_both){
     else{
       potas_split1 = potas_both * 0.50;
     }
-    // Serial.println(nitro_split1);
-    // Serial.println(phos_split1);
-    // Serial.println(potas_split1);
+    Serial.println(nitro_split1);
+    Serial.println(phos_split1);
+    Serial.println(potas_split1);
   }
 
   // second application
@@ -2416,9 +2415,9 @@ void splitting(int nit_both,int phos_both,int potas_both){
         }
 
     }
-    Serial.println(n_fil_val_second);
-    Serial.println(p_fil_val_second);
-    Serial.println(k_fil_val_second);
+    // Serial.println(n_fil_val_second);
+    // Serial.println(p_fil_val_second);
+    // Serial.println(k_fil_val_second);
     float result_divide_secondn1 = (n_fil_second != 0.0) ? (result_minusn1 / n_fil_second) : 0.0;;
     float result_divide_secondp1 = (p_fil_second != 0.0) ? (result_minusp1 / p_fil_second) : 0.0;
     float result_divide_secondk1 = (k_fil_second != 0.0) ? (result_minusk1 / k_fil_second) : 0.0;
@@ -2628,12 +2627,15 @@ void splitting(int nit_both,int phos_both,int potas_both){
       float result_divide_thirdn1 = (n_fil_third != 0.0) ? (result_minus_secondn1 / n_fil_third) : 0.0;;
       float result_divide_thirdp1 = (p_fil_third != 0.0) ? (result_minus_secondp1 / p_fil_third) : 0.0;
       float result_divide_thirdk1 = (k_fil_third != 0.0) ? (result_minus_secondk1 / k_fil_third) : 0.0;
-
+      // Serial.println(result_divide_thirdn1);
+      // Serial.println(result_divide_thirdp1);
+      // Serial.println(result_divide_thirdk1);
       float lowest_value_third = findLowestNonZero(result_divide_thirdn1, result_divide_thirdp1, result_divide_thirdk1);
       int low_third = static_cast<int>(lowest_value_third);
       float decimal_part_third = lowest_value_third - static_cast<float>(low_third);
       int decimal_as_int3 = static_cast<int>((decimal_part_third * 100.0));
-      
+      // Serial.print("ROUND OFF");
+      // Serial.println(lowest_value_third);
       float result_multip_thirdn1 = lowest_value_third * n_fil_third;
       float result_multip_thirdp1 = lowest_value_third * p_fil_third;
       float result_multip_thirdk1 = lowest_value_third * k_fil_third;
@@ -2645,6 +2647,7 @@ void splitting(int nit_both,int phos_both,int potas_both){
       // // Serial.println(result_minus_secondp1);
       // // Serial.println(result_minus_secondk1);
       float divide2_decimal_third = static_cast<float>(decimal_as_int3) / 2.0;
+
       rounded_value3 = static_cast<int>(round(divide2_decimal_third));
       get_number_third = int(lowest_value_third);
       // Serial.println(get_number_third);
@@ -2819,9 +2822,9 @@ void splitting(int nit_both,int phos_both,int potas_both){
   float result_divide_splitn1 = (n_fil_split2 != 0.0) ? (nitro_split2 / n_fil_split2) : 0.0;;
   float result_divide_splitp1 = (p_fil_split2 != 0.0) ? (phos_split2 / p_fil_split2) : 0.0;
   float result_divide_splitk1 = (k_fil_split2 != 0.0) ? (potas_split2 / k_fil_split2) : 0.0;
-  Serial.println(result_divide_splitn1);
-  Serial.println(result_divide_splitp1);
-  Serial.println(result_divide_splitk1);
+  // Serial.println(result_divide_splitn1);
+  // Serial.println(result_divide_splitp1);
+  // Serial.println(result_divide_splitk1);
   float lowest_value_split2 = findLowestNonZero(result_divide_splitn1, result_divide_splitp1, result_divide_splitk1);
 
   int low_split2 = static_cast<int>(lowest_value_split2);
@@ -3493,17 +3496,17 @@ void setup() {
     Serial.println("RTC is NOT running, let's set the time!");
     // When time needs to be set on a new device, or after a power loss, the
     // following line sets the RTC to the date & time this sketch was compiled
-    rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+    // rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
     // This line sets the RTC with an explicit date & time, for example to set
     // January 21, 2014 at 3am you would call:
-    // rtc.adjust(DateTime(2024, 3, 23, 7, 5, 0));
+    // rtc.adjust(DateTime(2024, 4, 7, 15, 31, 0));
   }
   // When time needs to be re-set on a previously configured device, the
   // following line sets the RTC to the date & time this sketch was compiled
-  // rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+  rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
   // This line sets the RTC with an explicit date & time, for example to set
   // January 21, 2014 at 3am you would call:
-  // rtc.adjust(DateTime(2024, 3, 25, 10, 27, 0));
+  // rtc.adjust(DateTime(2024, 4, 8, 14, 48, 0));
   // // List all files on the SD card
   sendDateOverSerial();
 }
@@ -3812,7 +3815,7 @@ void npkSense(){
     unsigned int nitrogen = (receivedData[11] << 8) | receivedData[12];
     unsigned int phosphorus = (receivedData[13] << 8) | receivedData[14];
     unsigned int potassium = (receivedData[15] << 8) | receivedData[16];
-    
+
     if (soilHumidity == 0 || soilConductivity == 0 || soilPH == 0 || nitrogen == 0 || phosphorus == 0 || potassium == 0){
       moisture = 0;
       ec = 0; 
@@ -3823,10 +3826,10 @@ void npkSense(){
     } else {
       moisture = (soilHumidity / 10.0);
       ec = (soilConductivity / 1000.0) - 0.43; 
-      pH = (soilPH / 10.0) - 0.84;
-      nitro = (nitrogen / 110.0);
+      pH = (soilPH / 10.0) - 0.20;
+      nitro = (nitrogen / 110.0) * 1.5;
       phos = (phosphorus * 30.973762) / 1000;
-      potas =  (potassium  / 39.0983) / 100;
+      potas =  (potassium  / 39.0983) / 100 * 1.5;
 
       moisture = (moisture < 0) ? 0 : moisture;
       ec = (ec < 0) ? 0 : ec;
@@ -3837,13 +3840,12 @@ void npkSense(){
     }
 
 
-    int n = static_cast<int>(nitro * 100);  
-    int ps = static_cast<int>(phos * 100);  
-    int k = static_cast<int>(potas * 100);
-    int ph = static_cast<int>(pH * 100);
-    int e = static_cast<int>(ec * 100);
-    int m = static_cast<int>(moisture * 100);
-
+    int n = static_cast<int>(round(nitro * 100));  
+    int ps = static_cast<int>(round(phos * 100));  
+    int k = static_cast<int>(round(potas * 100));
+    int ph = static_cast<int>(round(pH * 100));
+    int e = static_cast<int>(round(ec * 100));
+    int m = static_cast<int>(round(moisture * 100));
 
     /*------Send Data to Display------*/
 
@@ -3871,15 +3873,6 @@ void npkSense(){
     Moist_Dwin[7] = lowByte(m);
     Serial2.write(Moist_Dwin, 8);
 
-    // Serial.println(nitro);
-    // Serial.println(phos);
-    // Serial.println(potas);
-    // Serial.println(ec);
-    // Serial.println(pH);
-    // Serial.println(moisture);
-    // Serial.println(season);
-    // Serial.println(texture);
-    // Serial.println(variety);
     if (season == "WET" && texture == "LIGHT" && variety == "HYBRID"){
       hybrid_nitrogen_lws(nitro);
       phosphorus_(pH,phos);
@@ -4024,12 +4017,189 @@ void printData(String prefix){
     printer.print('/');
     printer.println(day);
     printer.println(dayOfTheWeek);
-    printer.print(hour);
-    printer.print(":");
-    printer.print(minute);
-    printer.print(":");
-    printer.println(second);
+    printWithString(printer, "SEASON: ",season);
+    printWithString(printer, "TEXTURE: ", texture);
+    printWithString(printer, "VARIETY: ", variety);
     printer.println();
+    printer.justify('L');
+    printer.println(F("   Parameter     Value"));
+    printer.justify('S');
+    printWithSpace(printer, "   Nitrogen-------",nitro, "%");
+    printWithSpace(printer, "   Phosphorus-----", phos, "ppm");
+    printWithSpace(printer, "   Potassium------", potas, "cmol/kg");
+    printWithSpace(printer, "   pH-------------", pH, " ");
+    printWithSpace(printer, "   EC-------------", ec, "mS/cm");
+    printWithSpace(printer, "   Moisture-------", moisture, "%");
+    printer.println();
+    printer.justify('L');
+    printer.println(F("   Parameter     Label"));
+    printer.justify('S');
+    printWithText(printer, "   Nitrogen-------", nit_value.c_str(), "");
+    printWithText(printer, "   Phosphorus-----", phos_value.c_str(), "");
+    printWithText(printer, "   Potassium------", potas_value.c_str(), "");
+    printWithText(printer, "   pH-------------", ph_value.c_str(), "");
+    printWithText(printer, "   EC-------------", soil_salinity_class.c_str(), "");
+    printWithText(printer, "   Moisture-------", mois_value.c_str(), "");
+    printer.println();
+    printer.justify('C'); // center the image
+    printer.setSize('S');
+    printer.println(F("Nutrients kg/ha"));
+    printWithInt(printer, "N:",nit_both);
+    printWithInt(printer, "P:", phos_both);
+    printWithInt(printer, "K:", potas_both);
+    printer.println();
+    printer.println(F("Fertilizers (per ha)"));
+    printer.print("Basal Application: ");
+    const char *basal = "10-20 bags,\n Organic Fertilizer";
+    // Print centered text
+    printer.println();
+    printCenteredText(printer, basal);
+    printer.println();
+    const char *topdressing1 = "1st TopDressing(5-7 DAT):";
+    printCenteredText(printer, topdressing1);
+    printer.setSize('S');
+    printer.print(get_number1);
+    printer.print(" bags ");
+    printer.print(rounded_value1);
+    printer.println(" kg");
+    printer.print(n_fil_val);
+    printer.print("-");
+    printer.print(p_fil_val);
+    printer.print("-");
+    printer.print(k_fil_val);
+    printer.println();
+    printer.setSize('S');
+    printer.print(get_number_second);
+    printer.print(" bags ");
+    printer.print(rounded_value2);
+    printer.println(" kg");
+    printer.print(n_fil_val_second);
+    printer.print("-");
+    printer.print(p_fil_val_second);
+    printer.print("-");
+    printer.print(k_fil_val_second);
+    printer.println();
+    printer.setSize('S');
+    printer.print(get_number_third);
+    printer.print(" bags ");
+    printer.print(rounded_value3);
+    printer.println(" kg");
+    printer.print(n_fil_val_third);
+    printer.print("-");
+    printer.print(p_fil_val_third);
+    printer.print("-");
+    printer.print(k_fil_val_third);
+    printer.setSize('S');
+    printer.println();
+    const char *topdressing2 = "2nd TopDressing(20-24 DAT):";
+    printCenteredText(printer, topdressing2);
+    printer.setSize('S');
+    printer.print(get_number_split2);
+    printer.print(" bags ");
+    printer.print(rounded_value4);
+    printer.println(" kg");
+    printer.print(n_fil_val_split2);
+    printer.print("-");
+    printer.print(p_fil_val_split2);
+    printer.print("-");
+    printer.print(k_fil_val_split2);
+    printer.println();
+    printer.setSize('S');
+    printer.print(get_number_split2_second);
+    printer.print(" bags ");
+    printer.print(rounded_value5);
+    printer.println(" kg");
+    printer.print(n_fil_val_split2_second);
+    printer.print("-");
+    printer.print(p_fil_val_split2_second);
+    printer.print("-");
+    printer.print(k_fil_val_split2_second);
+    printer.println();
+    const char *topdressing3 = "3rd TopDressing(30-35 DAT):";
+    printer.setSize('S');
+    printCenteredText(printer, topdressing3);
+    printer.print(get_number_split3);
+    printer.print(" bags ");
+    printer.print(rounded_value6);
+    printer.println(" kg");
+    printer.setSize('S');
+    printer.print(n_fil_val_split3);
+    printer.print("-");
+    printer.print(p_fil_val_split3);
+    printer.print("-");
+    printer.print(k_fil_val_split3);
+    printer.println();
+    printer.setSize('S');
+    printer.print(get_number_split3_second);
+    printer.print(" bags ");
+    printer.print(rounded_value7);
+    printer.println(" kg");
+    printer.print(n_fil_val_split3_second);
+    printer.print("-");
+    printer.print(p_fil_val_split3_second);
+    printer.print("-");
+    printer.print(k_fil_val_split3_second);
+    printer.println();
+    printer.boldOn();
+    printer.print("It is recommended to test your");
+    printer.println();
+    printer.print("soil every planting season for");
+    printer.println();
+    printer.print("efficient farming. Thank You!");
+    printer.println();
+    printer.println();
+    printer.println("Produced by: SENSOIL");
+    printer.boldOff();
+    printer.boldOff();
+    printer.feed(2); 
+    
+    printer.sleep();      // Tell printer to sleep
+    printer.wake();       // MUST wake() before printing again, even if reset
+    printer.setDefault(); // Restore printer to defaults
+  }
+  oldButtonState = buttonState;
+}
+
+void printDataNow(){
+  DateTime now = rtc.now();
+
+  Serial.print(now.year());
+  Serial.print('/');
+  Serial.print(now.month(), DEC);
+  Serial.print('/');
+  Serial.print(now.day(), DEC);
+  Serial.print(" (");
+  Serial.print(daysOfTheWeek[now.dayOfTheWeek()]);
+  Serial.print(") ");
+  Serial.print(now.hour(), DEC);
+  Serial.print(':');
+  Serial.print(now.minute(), DEC);
+  Serial.print(':');
+  Serial.print(now.second(), DEC);
+  Serial.println();
+
+  hour = now.hour();
+
+  buttonState  = digitalRead(PRINT_BUTTON);
+  if (buttonState != oldButtonState &&
+    buttonState == HIGH)
+  {
+    if (hour > 12) {
+        hour -= 12; 
+    }
+    printer.justify('C'); 
+    printer.setSize('L');  
+    printer.boldOn();
+    printer.println(F("S E N S O I L"));
+    printer.setSize('S');  
+    printer.println();
+    printer.print("Date:");
+    printer.print(now.year());
+    printer.print('/');
+    printer.print(now.month());
+    printer.print('/');
+    printer.println(now.day());
+    printer.println(daysOfTheWeek[now.dayOfTheWeek()]);
     printWithString(printer, "SEASON: ",season);
     printWithString(printer, "TEXTURE: ", texture);
     printWithString(printer, "VARIETY: ", variety);
