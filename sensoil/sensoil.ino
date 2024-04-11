@@ -3496,7 +3496,7 @@ void setup() {
     Serial.println("RTC is NOT running, let's set the time!");
     // When time needs to be set on a new device, or after a power loss, the
     // following line sets the RTC to the date & time this sketch was compiled
-    // rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+    rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
     // This line sets the RTC with an explicit date & time, for example to set
     // January 21, 2014 at 3am you would call:
     // rtc.adjust(DateTime(2024, 4, 7, 15, 31, 0));
@@ -3506,7 +3506,7 @@ void setup() {
   rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
   // This line sets the RTC with an explicit date & time, for example to set
   // January 21, 2014 at 3am you would call:
-  // rtc.adjust(DateTime(2024, 4, 8, 14, 48, 0));
+  // rtc.adjust(DateTime(2024, 4, 9, 14, 44, 0));
   // // List all files on the SD card
   sendDateOverSerial();
 }
