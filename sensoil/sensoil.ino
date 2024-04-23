@@ -36,7 +36,9 @@ unsigned char Buffer[9];
 #define nit_both_dwin 0x60
 #define phos_both_dwin 0x61
 #define potas_both_dwin 0x62
-int resetPin = 4;
+
+
+#define RESET_PIN 9
 unsigned char Nitro_Dwin[8] = {0x5A, 0xA5, 0x05, 0x82, nitro_value_dwin, 0x00, 0x00, 0x00};
 unsigned char Phos_Dwin[8] = {0x5A, 0xA5, 0x05, 0x82, phos_value_dwin, 0x00, 0x00, 0x00};
 unsigned char Potas_Dwin[8] = {0x5A, 0xA5, 0x05, 0x82, potas_value_dwin, 0x00, 0x00, 0x00};
@@ -51,7 +53,10 @@ unsigned char Potas_Both_Dwin[8] = {0x5A, 0xA5, 0x05, 0x82, potas_both_dwin, 0x0
 
 File myFile;
 RTC_DS1307 rtc;
-
+// DATE
+int year,month,day;
+int hour,minute,second;
+String dayOfTheWeek;
 // Nutrient Reco
 float n_fil,p_fil,k_fil;
 int get_number1,rounded_value1;
@@ -244,9 +249,9 @@ String extractPrefix(String filename) {
 
   return prefix;
 }
-
 void dwinListen(){
   while(true){
+
     DateTime now = rtc.now();
     // delay(5000);
     int startAdd = 00;
@@ -627,8 +632,7 @@ void dwinListen(){
 
 
 
-    printData(prefix);
-    Serial.println(prefix);
+    printDataNow();
     switches();
     while (Serial2.available()) {
         int inhex = Serial2.read();
@@ -827,7 +831,21 @@ void parseAndAssignVariables(String dataLine) {
     String value = dataLine.substring(commaIndex + 1);
 
     // Assign values based on the type of header
-    if (header == "Season") {
+    if (header == "Year"){
+      year = value.toInt();
+    } else if (header == "Month"){
+      month = value.toInt();;
+    } else if (header == "Day"){
+      day = value.toInt();;
+    } else if (header == "Week"){
+      dayOfTheWeek = value;
+    } else if (header == "Hour"){
+      hour = value.toInt();
+    } else if (header == "Minute"){
+      minute = value.toInt();
+    } else if (header == "Second"){
+      second = value.toInt();
+    } else if (header == "Season") {
       season = value;
     } else if (header == "Variety") {
       variety = value;
@@ -1016,12 +1034,23 @@ void logData() {
 
   // Check if the file opened successfully
   if (dataFile) {
+    year = now.year();
+    month = now.month();
+    day = now.day();
+    dayOfTheWeek = daysOfTheWeek[now.dayOfTheWeek()];
+    hour = now.hour();
+    minute = now.minute();
+    second = now.second();
+
     // Write data to the file
     dataFile.println("No,"+prefix);
-    dataFile.println("Year,"+ String(now.year()));
-    dataFile.println("Month,"+ String(now.month()));
-    dataFile.println("Day,"+ String(now.day()));
-    dataFile.println("Week,"+ String(daysOfTheWeek[now.dayOfTheWeek()]));
+    dataFile.println("Year,"+ String(year));
+    dataFile.println("Month,"+ String(month));
+    dataFile.println("Day,"+ String(day));
+    dataFile.println("Week,"+ String(dayOfTheWeek));
+    dataFile.println("Hour,"+ String(hour));
+    dataFile.println("Minute,"+ String(minute));
+    dataFile.println("Second,"+ String(second));
     dataFile.println("Season," + String(season));
     dataFile.println("Variety," + String(variety));
     dataFile.println("Texture," + String(texture));
@@ -1128,7 +1157,7 @@ void printWithSpace(Adafruit_Thermal &printer, const char *parameter, float valu
   for (int i = 0; i < spaces; i++) {
     printer.print(" ");
   }
-  printer.print(value, 2);
+  printer.print(value);
   printer.print(unit);
   printer.println();
 }
@@ -1405,7 +1434,7 @@ void electrical_conductivity(float ec){
   Serial.println();
 
   if (ec >= 0 && ec <= 2) {
-    unsigned char Saline[] = {0x5A,0xA5,0x10,0x82,0x16,0x00,0x2D,0x2D,0x56,0x45,0x52,0x59,0x5F,0x4C,0x4F,0x57};
+    unsigned char Saline[] = {0x5A,0xA5,0x10,0x82,0x16,0x00,0x2D,0x2D,0x56,0x45,0x52,0x59,0x5F,0x4C,0x4F,0x57,0x2D,0x2D,0x2D};
     Serial2.write(Saline,19);
   }
   else if (ec > 2.1 && ec <= 4) {
@@ -1428,10 +1457,10 @@ void electrical_conductivity(float ec){
 }
 void moisture_(float moisture){
     // Moisture
-  if (moisture <= 15){
+  if (moisture >= 0 && moisture <= 39){
     mois_value = "LOW"; 
   }
-  else if (moisture >= 60 && moisture <= 20){
+  else if (moisture >= 40 && moisture <= 80){
     mois_value = "SUFFICIENT";
   } else {
     mois_value = "HIGH";
@@ -1443,11 +1472,11 @@ void moisture_(float moisture){
   Serial.print("Moisture Value: ");
   Serial.print(mois_value);
   Serial.println();
-  if (moisture <= 19){
+  if (moisture >= 0 && moisture <= 39){
     unsigned char Moisture[] = {0x5A,0xA5,0x10,0x82,0x17,0x00,0x2D,0x2D,0x2D,0x2D,0x2D,0x4C,0x4F,0x57,0x2D,0x2D,0x2D,0x2D,0x2D};
     Serial2.write(Moisture,19);
   }
-  else if (moisture >= 60 && moisture <= 20){
+  else if (moisture >= 40 && moisture <= 80){
     unsigned char Moisture[] = {0x5A,0xA5,0x10,0x82,0x17,0x00,0x2D,0x53,0x55,0x46,0x46,0x49,0x43,0x49,0x45,0x4E,0x54,0x2D,0x2D};
     Serial2.write(Moisture,19);
   } else {
@@ -1920,9 +1949,9 @@ void inbred_nitrogen_hds(float nitro){
 
 // Splitting Nutrient Recommendation
 void splitting(int nit_both,int phos_both,int potas_both){
-  int nitro_split1,phos_split1,potas_split1;
-  int nitro_split2,phos_split2,potas_split2;
-  int nitro_split3,phos_split3,potas_split3;
+  float nitro_split1,phos_split1,potas_split1;
+  float nitro_split2,phos_split2,potas_split2;
+  float nitro_split3,phos_split3,potas_split3;
   // Serial.println(nit_both);
   // Serial.println(phos_both);
   // Serial.println(potas_both);
@@ -1942,9 +1971,9 @@ void splitting(int nit_both,int phos_both,int potas_both){
     else{
       potas_split1 = potas_both * 0.50;
     }
-    // Serial.println(nitro_split1);
-    // Serial.println(phos_split1);
-    // Serial.println(potas_split1);
+    Serial.println(nitro_split1);
+    Serial.println(phos_split1);
+    Serial.println(potas_split1);
   }
 
   // second application
@@ -2386,9 +2415,9 @@ void splitting(int nit_both,int phos_both,int potas_both){
         }
 
     }
-    Serial.println(n_fil_val_second);
-    Serial.println(p_fil_val_second);
-    Serial.println(k_fil_val_second);
+    // Serial.println(n_fil_val_second);
+    // Serial.println(p_fil_val_second);
+    // Serial.println(k_fil_val_second);
     float result_divide_secondn1 = (n_fil_second != 0.0) ? (result_minusn1 / n_fil_second) : 0.0;;
     float result_divide_secondp1 = (p_fil_second != 0.0) ? (result_minusp1 / p_fil_second) : 0.0;
     float result_divide_secondk1 = (k_fil_second != 0.0) ? (result_minusk1 / k_fil_second) : 0.0;
@@ -2598,12 +2627,15 @@ void splitting(int nit_both,int phos_both,int potas_both){
       float result_divide_thirdn1 = (n_fil_third != 0.0) ? (result_minus_secondn1 / n_fil_third) : 0.0;;
       float result_divide_thirdp1 = (p_fil_third != 0.0) ? (result_minus_secondp1 / p_fil_third) : 0.0;
       float result_divide_thirdk1 = (k_fil_third != 0.0) ? (result_minus_secondk1 / k_fil_third) : 0.0;
-
+      // Serial.println(result_divide_thirdn1);
+      // Serial.println(result_divide_thirdp1);
+      // Serial.println(result_divide_thirdk1);
       float lowest_value_third = findLowestNonZero(result_divide_thirdn1, result_divide_thirdp1, result_divide_thirdk1);
       int low_third = static_cast<int>(lowest_value_third);
       float decimal_part_third = lowest_value_third - static_cast<float>(low_third);
       int decimal_as_int3 = static_cast<int>((decimal_part_third * 100.0));
-      
+      // Serial.print("ROUND OFF");
+      // Serial.println(lowest_value_third);
       float result_multip_thirdn1 = lowest_value_third * n_fil_third;
       float result_multip_thirdp1 = lowest_value_third * p_fil_third;
       float result_multip_thirdk1 = lowest_value_third * k_fil_third;
@@ -2615,6 +2647,7 @@ void splitting(int nit_both,int phos_both,int potas_both){
       // // Serial.println(result_minus_secondp1);
       // // Serial.println(result_minus_secondk1);
       float divide2_decimal_third = static_cast<float>(decimal_as_int3) / 2.0;
+
       rounded_value3 = static_cast<int>(round(divide2_decimal_third));
       get_number_third = int(lowest_value_third);
       // Serial.println(get_number_third);
@@ -2789,9 +2822,9 @@ void splitting(int nit_both,int phos_both,int potas_both){
   float result_divide_splitn1 = (n_fil_split2 != 0.0) ? (nitro_split2 / n_fil_split2) : 0.0;;
   float result_divide_splitp1 = (p_fil_split2 != 0.0) ? (phos_split2 / p_fil_split2) : 0.0;
   float result_divide_splitk1 = (k_fil_split2 != 0.0) ? (potas_split2 / k_fil_split2) : 0.0;
-  Serial.println(result_divide_splitn1);
-  Serial.println(result_divide_splitp1);
-  Serial.println(result_divide_splitk1);
+  // Serial.println(result_divide_splitn1);
+  // Serial.println(result_divide_splitp1);
+  // Serial.println(result_divide_splitk1);
   float lowest_value_split2 = findLowestNonZero(result_divide_splitn1, result_divide_splitp1, result_divide_splitk1);
 
   int low_split2 = static_cast<int>(lowest_value_split2);
@@ -3433,6 +3466,7 @@ void setup() {
   pinMode(MEDIUM_SELECTOR, INPUT_PULLUP);
   pinMode(HEAVY_SELECTOR, INPUT_PULLUP);
   pinMode(PRINT_BUTTON, INPUT_PULLUP);
+  pinMode(RESET_PIN, INPUT); 
   // Serial initialization
   Serial.begin(9600);
   Serial1.begin(4800);
@@ -3443,17 +3477,19 @@ void setup() {
   mySerial.begin(9600);
   // Printer initialization
   printer.begin();
-
-  // SD Card initialization
-  if (!SD.begin(chipSelect)) {
-    Serial.println("Card failed, or not present");
-  }
-  Serial.println("card initialized.");
   
   if (!rtc.begin()) {
     Serial.println("Couldn't find RTC");
     Serial.flush();
     while (1) delay(10);
+  }
+  // SD Card initialization
+  if (!SD.begin(chipSelect)) {
+    Serial.println("Card failed, or not present");
+  } else {
+    Serial.println("CARD READ!");
+    resetPinBut();
+    return;
   }
 
   if (!rtc.isrunning()) {
@@ -3463,21 +3499,295 @@ void setup() {
     rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
     // This line sets the RTC with an explicit date & time, for example to set
     // January 21, 2014 at 3am you would call:
-    // rtc.adjust(DateTime(2024, 3, 23, 7, 5, 0));
+    // rtc.adjust(DateTime(2024, 4, 7, 15, 31, 0));
   }
   // When time needs to be re-set on a previously configured device, the
   // following line sets the RTC to the date & time this sketch was compiled
-  // rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
+  rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
   // This line sets the RTC with an explicit date & time, for example to set
   // January 21, 2014 at 3am you would call:
-  // rtc.adjust(DateTime(2024, 3, 23, 7, 6, 0));
+  // rtc.adjust(DateTime(2024, 4, 9, 14, 44, 0));
   // // List all files on the SD card
   sendDateOverSerial();
-
 }
 
 void loop() {
   dwinListen();
+
+}
+void resetPinBut(){
+  int n = static_cast<int>(0);  
+  int ps = static_cast<int>(0);  
+  int k = static_cast<int>(0);
+  int ph = static_cast<int>(0);
+  int e = static_cast<int>(0);
+  int m = static_cast<int>(0);
+
+  unsigned char N_fil[8] = {0x5A, 0xA5, 0x05, 0x82, 0x72, 0x00, 0x00, 0x00};
+  unsigned char P_fil[8] = {0x5A, 0xA5, 0x05, 0x82, 0x73, 0x00, 0x00, 0x00};
+  unsigned char K_fil[8] = {0x5A, 0xA5, 0x05, 0x82, 0x74, 0x00, 0x00, 0x00};
+  unsigned char GetNumber1[8] = {0x5A, 0xA5, 0x05, 0x82, 0x70, 0x00, 0x00, 0x00};
+  unsigned char DivideDecimal1[8] = {0x5A, 0xA5, 0x05, 0x82, 0x71, 0x00, 0x00, 0x00};
+  unsigned char N_filSecond[8] = {0x5A, 0xA5, 0x05, 0x82, 0x77, 0x00, 0x00, 0x00};
+  unsigned char P_filSecond[8] = {0x5A, 0xA5, 0x05, 0x82, 0x78, 0x00, 0x00, 0x00};
+  unsigned char K_filSecond[8] = {0x5A, 0xA5, 0x05, 0x82, 0x79, 0x00, 0x00, 0x00};
+  unsigned char GetNumber2[8] = {0x5A, 0xA5, 0x05, 0x82, 0x75, 0x00, 0x00, 0x00};
+  unsigned char DivideDecimal2[8] = {0x5A, 0xA5, 0x05, 0x82, 0x76, 0x00, 0x00, 0x00};
+  unsigned char N_filThird[8] = {0x5A, 0xA5, 0x05, 0x82, 0x82, 0x00, 0x00, 0x00};
+  unsigned char P_filThird[8] = {0x5A, 0xA5, 0x05, 0x82, 0x83, 0x00, 0x00, 0x00};
+  unsigned char K_filThird[8] = {0x5A, 0xA5, 0x05, 0x82, 0x84, 0x00, 0x00, 0x00};
+  unsigned char GetNumber3[8] = {0x5A, 0xA5, 0x05, 0x82, 0x80, 0x00, 0x00, 0x00};
+  unsigned char DivideDecimal3[8] = {0x5A, 0xA5, 0x05, 0x82, 0x81, 0x00, 0x00, 0x00};
+  unsigned char N_filSplit2[8] = {0x5A, 0xA5, 0x05, 0x82, 0x87, 0x00, 0x00, 0x00};
+  unsigned char P_filSplit2[8] = {0x5A, 0xA5, 0x05, 0x82, 0x88, 0x00, 0x00, 0x00};
+  unsigned char K_filSplit2[8] = {0x5A, 0xA5, 0x05, 0x82, 0x89, 0x00, 0x00, 0x00};
+  unsigned char GetNumber4[8] = {0x5A, 0xA5, 0x05, 0x82, 0x85, 0x00, 0x00, 0x00};
+  unsigned char DivideDecimal4[8] = {0x5A, 0xA5, 0x05, 0x82, 0x86, 0x00, 0x00, 0x00};
+  unsigned char N_filSplit2_Second[8] = {0x5A, 0xA5, 0x05, 0x82, 0x92, 0x00, 0x00, 0x00};
+  unsigned char P_filSplit2_Second[8] = {0x5A, 0xA5, 0x05, 0x82, 0x92, 0x50, 0x00, 0x00};
+  unsigned char K_filSplit2_Second[8] = {0x5A, 0xA5, 0x05, 0x82, 0x93, 0x00, 0x00, 0x00};
+  unsigned char GetNumber5[8] = {0x5A, 0xA5, 0x05, 0x82, 0x90, 0x00, 0x00, 0x00};
+  unsigned char DivideDecimal5[8] = {0x5A, 0xA5, 0x05, 0x82, 0x91, 0x00, 0x00, 0x00};
+  unsigned char N_filSplit3[8] = {0x5A, 0xA5, 0x05, 0x82, 0x96, 0x00, 0x00, 0x00};
+  unsigned char P_filSplit3[8] = {0x5A, 0xA5, 0x05, 0x82, 0x97, 0x00, 0x00, 0x00};
+  unsigned char K_filSplit3[8] = {0x5A, 0xA5, 0x05, 0x82, 0x98, 0x00, 0x00, 0x00};
+  unsigned char GetNumber6[8] = {0x5A, 0xA5, 0x05, 0x82, 0x94, 0x00, 0x00, 0x00};
+  unsigned char DivideDecimal6[8] = {0x5A, 0xA5, 0x05, 0x82, 0x95, 0x00, 0x00, 0x00};
+  unsigned char N_filSplit3_Second[8] = {0x5A, 0xA5, 0x05, 0x82, 0x12, 0x00, 0x00, 0x00};
+  unsigned char P_filSplit3_Second[8] = {0x5A, 0xA5, 0x05, 0x82, 0x13, 0x00, 0x00, 0x00};
+  unsigned char K_filSplit3_Second[8] = {0x5A, 0xA5, 0x05, 0x82, 0x14, 0x00, 0x00, 0x00};
+  unsigned char GetNumber7[8] = {0x5A, 0xA5, 0x05, 0x82, 0x99, 0x00, 0x00, 0x00};
+  unsigned char DivideDecimal7[8] = {0x5A, 0xA5, 0x05, 0x82, 0x11, 0x00, 0x00, 0x00};
+
+  /*------Send Data to Display------*/
+
+  Nitro_Dwin[6] = highByte(n);
+  Nitro_Dwin[7] = lowByte(n);
+  Serial2.write(Nitro_Dwin, 8);
+  
+  Phos_Dwin[6] = highByte(ps);
+  Phos_Dwin[7] = lowByte(ps);
+  Serial2.write(Phos_Dwin, 8);
+
+  Potas_Dwin[6] = highByte(k);
+  Potas_Dwin[7] = lowByte(k);
+  Serial2.write(Potas_Dwin, 8);
+  
+  PH_Dwin[6] = highByte(ph);
+  PH_Dwin[7] = lowByte(ph);
+  Serial2.write(PH_Dwin, 8);
+  
+  EC_Dwin[6] = highByte(e);
+  EC_Dwin[7] = lowByte(e);
+  Serial2.write(EC_Dwin, 8);
+  
+  Moist_Dwin[6] = highByte(m);
+  Moist_Dwin[7] = lowByte(m);
+  Serial2.write(Moist_Dwin, 8);
+
+  /* NUTRI RECO */
+  int nb = static_cast<int>(0);  
+  int pb = static_cast<int>(0);  
+  int pob = static_cast<int>(0);
+
+  /*------Send Data to Display------*/
+  Nit_Both_Dwin[6] = highByte(nb);
+  Nit_Both_Dwin[7] = lowByte(nb);
+  Serial2.write(Nit_Both_Dwin, 8);
+  
+  Phos_Both_Dwin[6] = highByte(pb);
+  Phos_Both_Dwin[7] = lowByte(pb);
+  Serial2.write(Phos_Both_Dwin, 8);
+
+  Potas_Both_Dwin[6] = highByte(pob);
+  Potas_Both_Dwin[7] = lowByte(pob);
+  Serial2.write(Potas_Both_Dwin, 8);
+
+  /* FILTER RECO */
+
+  n_fil_val = static_cast<int>(0);  
+  p_fil_val = static_cast<int>(0);  
+  k_fil_val = static_cast<int>(0);  
+
+  /*------Send Data to Display------*/
+  N_fil[6] = highByte(n_fil_val);
+  N_fil[7] = lowByte(n_fil_val);
+  Serial2.write(N_fil, 8);
+
+  P_fil[6] = highByte(p_fil_val);
+  P_fil[7] = lowByte(p_fil_val);
+  Serial2.write(P_fil, 8);
+
+  K_fil[6] = highByte(k_fil_val);
+  K_fil[7] = lowByte(k_fil_val);
+  Serial2.write(K_fil, 8);
+
+  int getnumber1 = static_cast<int>(0);   
+  GetNumber1[6] = highByte(getnumber1);
+  GetNumber1[7] = lowByte(getnumber1);
+  Serial2.write(GetNumber1, 8);
+
+  int dividedecimal1 = static_cast<int>(0);   
+  DivideDecimal1[6] = highByte(dividedecimal1);
+  DivideDecimal1[7] = lowByte(dividedecimal1);
+  Serial2.write(DivideDecimal1, 8);
+
+  n_fil_val_second = static_cast<int>(0);  
+  p_fil_val_second = static_cast<int>(0);  
+  k_fil_val_second = static_cast<int>(0);  
+  /*------Send Data to Display------*/
+  N_filSecond[6] = highByte(n_fil_val_second);
+  N_filSecond[7] = lowByte(n_fil_val_second);
+  Serial2.write(N_filSecond, 8);
+  P_filSecond[6] = highByte(p_fil_val_second);
+  P_filSecond[7] = lowByte(p_fil_val_second);
+  Serial2.write(P_filSecond, 8);
+  K_filSecond[6] = highByte(k_fil_val_second);
+  K_filSecond[7] = lowByte(k_fil_val_second);
+  Serial2.write(K_filSecond, 8);
+
+  int getnumber2 = static_cast<int>(0);   
+  GetNumber2[6] = highByte(getnumber2);
+  GetNumber2[7] = lowByte(getnumber2);
+  Serial2.write(GetNumber2, 8);
+
+  int dividedecimal2 = static_cast<int>(0);   
+  DivideDecimal2[6] = highByte(dividedecimal2);
+  DivideDecimal2[7] = lowByte(dividedecimal2);
+  Serial2.write(DivideDecimal2, 8);
+
+  n_fil_val_third = static_cast<int>(0);  
+  p_fil_val_third = static_cast<int>(0);  
+  k_fil_val_third = static_cast<int>(0);  
+  /*------Send Data to Display------*/
+  N_filThird[6] = highByte(n_fil_val_third);
+  N_filThird[7] = lowByte(n_fil_val_third);
+  Serial2.write(N_filThird, 8);
+  P_filThird[6] = highByte(p_fil_val_third);
+  P_filThird[7] = lowByte(p_fil_val_third);
+  Serial2.write(P_filThird, 8);
+  K_filThird[6] = highByte(k_fil_val_third);
+  K_filThird[7] = lowByte(k_fil_val_third);
+  Serial2.write(K_filThird, 8);
+
+  int getnumber3 = static_cast<int>(0);   
+  GetNumber3[6] = highByte(getnumber3);
+  GetNumber3[7] = lowByte(getnumber3);
+  Serial2.write(GetNumber3, 8);
+  int dividedecimal3 = static_cast<int>(0);   
+  DivideDecimal3[6] = highByte(dividedecimal3);
+  DivideDecimal3[7] = lowByte(dividedecimal3);
+  Serial2.write(DivideDecimal3, 8);
+
+  n_fil_val_split2 = static_cast<int>(0);  
+  p_fil_val_split2 = static_cast<int>(0);  
+  k_fil_val_split2 = static_cast<int>(0);  
+  /*------Send Data to Display------*/
+  N_filSplit2[6] = highByte(n_fil_val_split2);
+  N_filSplit2[7] = lowByte(n_fil_val_split2);
+  Serial2.write(N_filSplit2, 8);
+  P_filSplit2[6] = highByte(p_fil_val_split2);
+  P_filSplit2[7] = lowByte(p_fil_val_split2);
+  Serial2.write(P_filSplit2, 8);
+  K_filSplit2[6] = highByte(k_fil_val_split2);
+  K_filSplit2[7] = lowByte(k_fil_val_split2);
+  Serial2.write(K_filSplit2, 8);
+
+  int getnumber4 = static_cast<int>(0);   
+  GetNumber4[6] = highByte(getnumber4);
+  GetNumber4[7] = lowByte(getnumber4);
+  Serial2.write(GetNumber4, 8);
+  int dividedecimal4 = static_cast<int>(0);   
+  DivideDecimal4[6] = highByte(dividedecimal4);
+  DivideDecimal4[7] = lowByte(dividedecimal4);
+  Serial2.write(DivideDecimal4, 8);
+
+  n_fil_val_split2_second = static_cast<int>(0);  
+  p_fil_val_split2_second = static_cast<int>(0);  
+  k_fil_val_split2_second = static_cast<int>(0);  
+  /*------Send Data to Display------*/
+  N_filSplit2_Second[6] = highByte(n_fil_val_split2_second);
+  N_filSplit2_Second[7] = lowByte(n_fil_val_split2_second);
+  Serial2.write(N_filSplit2_Second, 8);
+  P_filSplit2_Second[6] = highByte(p_fil_val_split2_second);
+  P_filSplit2_Second[7] = lowByte(p_fil_val_split2_second);
+  Serial2.write(P_filSplit2_Second, 8);
+  K_filSplit2_Second[6] = highByte(k_fil_val_split2_second);
+  K_filSplit2_Second[7] = lowByte(k_fil_val_split2_second);
+  Serial2.write(K_filSplit2_Second, 8);
+
+  int getnumber5 = static_cast<int>(0);   
+  GetNumber5[6] = highByte(getnumber5);
+  GetNumber5[7] = lowByte(getnumber5);
+  Serial2.write(GetNumber5, 8);
+  int dividedecimal5 = static_cast<int>(0);   
+  DivideDecimal5[6] = highByte(dividedecimal5);
+  DivideDecimal5[7] = lowByte(dividedecimal5);
+  Serial2.write(DivideDecimal5, 8);
+
+  n_fil_val_split3 = static_cast<int>(0);  
+  p_fil_val_split3 = static_cast<int>(0);  
+  k_fil_val_split3 = static_cast<int>(0);  
+  /*------Send Data to Display------*/
+  N_filSplit3[6] = highByte(n_fil_val_split3);
+  N_filSplit3[7] = lowByte(n_fil_val_split3);
+  Serial2.write(N_filSplit3, 8);
+  P_filSplit3[6] = highByte(p_fil_val_split3);
+  P_filSplit3[7] = lowByte(p_fil_val_split3);
+  Serial2.write(P_filSplit3, 8);
+  K_filSplit3[6] = highByte(k_fil_val_split3);
+  K_filSplit3[7] = lowByte(k_fil_val_split3);
+  Serial2.write(K_filSplit3, 8);
+
+  int getnumber6 = static_cast<int>(0);   
+  GetNumber6[6] = highByte(getnumber6);
+  GetNumber6[7] = lowByte(getnumber6);
+  Serial2.write(GetNumber6, 8);
+
+  int dividedecimal6 = static_cast<int>(0);   
+  DivideDecimal6[6] = highByte(dividedecimal6);
+  DivideDecimal6[7] = lowByte(dividedecimal6);
+  Serial2.write(DivideDecimal6, 8);
+
+  n_fil_val_split3_second = static_cast<int>(0);  
+  p_fil_val_split3_second = static_cast<int>(0);  
+  k_fil_val_split3_second = static_cast<int>(0);  
+  N_filSplit3_Second[6] = highByte(n_fil_val_split3_second);
+  N_filSplit3_Second[7] = lowByte(n_fil_val_split3_second);
+  Serial2.write(N_filSplit3_Second, 8);
+  P_filSplit3_Second[6] = highByte(p_fil_val_split3_second);
+  P_filSplit3_Second[7] = lowByte(p_fil_val_split3_second);
+  Serial2.write(P_filSplit3_Second, 8);
+  K_filSplit3_Second[6] = highByte(k_fil_val_split3_second);
+  K_filSplit3_Second[7] = lowByte(k_fil_val_split3_second);
+  Serial2.write(K_filSplit3_Second, 8);
+
+  int getnumber7 = static_cast<int>(0);   
+  GetNumber7[6] = highByte(getnumber7);
+  GetNumber7[7] = lowByte(getnumber7);
+  Serial2.write(GetNumber7, 8);
+  int dividedecimal7 = static_cast<int>(0);   
+  DivideDecimal7[6] = highByte(dividedecimal7);
+  DivideDecimal7[7] = lowByte(dividedecimal7);
+  Serial2.write(DivideDecimal7, 8);
+
+  unsigned char Nitrogen_Label_Dwin[] = {0x5A,0xA5,0x10,0x82,0x22,0x00,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
+  Serial2.write(Nitrogen_Label_Dwin,19); 
+
+  unsigned char Moisture[] = {0x5A,0xA5,0x10,0x82,0x17,0x00,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
+  Serial2.write(Moisture,19); 
+
+  unsigned char Phosphorus_Label[] = {0x5A,0xA5,0x10,0x82,0x21,0x00,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
+  Serial2.write(Phosphorus_Label,19); 
+
+  unsigned char Potassium_Label[] = {0x5A,0xA5,0x10,0x82,0x23,0x00,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
+  Serial2.write(Potassium_Label,19); 
+
+  unsigned char Soil_ph[] = {0x5A,0xA5,0x10,0x82,0x15,0x00,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
+  Serial2.write(Soil_ph,19);
+
+  unsigned char Saline[] = {0x5A,0xA5,0x10,0x82,0x16,0x00,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D,0x2D};
+  Serial2.write(Saline,19);
 
 }
 void npkSense(){
@@ -3505,21 +3815,37 @@ void npkSense(){
     unsigned int nitrogen = (receivedData[11] << 8) | receivedData[12];
     unsigned int phosphorus = (receivedData[13] << 8) | receivedData[14];
     unsigned int potassium = (receivedData[15] << 8) | receivedData[16];
-    
-    moisture = (soilHumidity / 10.0);
-    ec = (soilConductivity / 1000.0) - 0.43; 
-    pH = (soilPH / 10.0) - 0.84;
-    nitro = (nitrogen / 110.0);
-    phos = (phosphorus * 30.973762) / 1000;
-    potas =  (potassium  / 39.0983) / 100;
 
-    int n = static_cast<int>(nitro * 100);  
-    int ps = static_cast<int>(phos * 100);  
-    int k = static_cast<int>(potas * 100);
-    int ph = static_cast<int>(pH * 100);
-    int e = static_cast<int>(ec * 100);
-    int m = static_cast<int>(moisture * 100);
+    if (soilHumidity == 0 || soilConductivity == 0 || soilPH == 0 || nitrogen == 0 || phosphorus == 0 || potassium == 0){
+      moisture = 0;
+      ec = 0; 
+      pH = 0;
+      nitro = 0;
+      phos = 0;
+      potas = 0;
+    } else {
+      moisture = (soilHumidity / 10.0);
+      ec = (soilConductivity / 1000.0) - 0.43; 
+      pH = (soilPH / 10.0) - 0.20;
+      nitro = (nitrogen / 110.0) * 1.5;
+      phos = (phosphorus * 30.973762) / 1000;
+      potas =  (potassium  / 39.0983) / 100 * 1.5;
 
+      moisture = (moisture < 0) ? 0 : moisture;
+      ec = (ec < 0) ? 0 : ec;
+      pH = (pH < 0) ? 0 : pH;
+      nitro = (nitro < 0) ? 0 : nitro;
+      phos = (phos < 0) ? 0 : phos;
+      potas = (potas < 0) ? 0 : potas;
+    }
+
+
+    int n = static_cast<int>(round(nitro * 100));  
+    int ps = static_cast<int>(round(phos * 100));  
+    int k = static_cast<int>(round(potas * 100));
+    int ph = static_cast<int>(round(pH * 100));
+    int e = static_cast<int>(round(ec * 100));
+    int m = static_cast<int>(round(moisture * 100));
 
     /*------Send Data to Display------*/
 
@@ -3547,15 +3873,6 @@ void npkSense(){
     Moist_Dwin[7] = lowByte(m);
     Serial2.write(Moist_Dwin, 8);
 
-    // Serial.println(nitro);
-    // Serial.println(phos);
-    // Serial.println(potas);
-    // Serial.println(ec);
-    // Serial.println(pH);
-    // Serial.println(moisture);
-    // Serial.println(season);
-    // Serial.println(texture);
-    // Serial.println(variety);
     if (season == "WET" && texture == "LIGHT" && variety == "HYBRID"){
       hybrid_nitrogen_lws(nitro);
       phosphorus_(pH,phos);
@@ -3682,206 +3999,342 @@ void printData(String prefix){
   if (buttonState != oldButtonState &&
     buttonState == HIGH)
   {
-
-    printer.justify('C');
-    printer.setSize('L');
+    if (hour > 12) {
+        hour -= 12; 
+    }
+    printer.justify('C'); 
+    printer.setSize('L');  
     printer.boldOn();
     printer.println(F("S E N S O I L"));
-    printer.boldOff();
-
+    printer.setSize('S');  
     printer.println();
-
-    printer.setSize('S');
-    printer.print("No: ");
+    printer.print(F("No: "));
     printer.println(prefix);
-    printer.println();
-
-    printer.setSize('S');
-    printer.print("Date: ");
-    printer.print(now.year(),DEC);
+    printer.print("Date:");
+    printer.print(year);
     printer.print('/');
-    printer.print(now.month(),DEC);
+    printer.print(month);
     printer.print('/');
-    printer.println(now.day(),DEC);
-    printer.println(daysOfTheWeek[now.dayOfTheWeek()]);
-    printer.println();
-
-    // Separator
-
-    printer.println();
-    printer.setSize('S');
-    printer.justify('C');
+    printer.println(day);
+    printer.println(dayOfTheWeek);
     printWithString(printer, "SEASON: ",season);
     printWithString(printer, "TEXTURE: ", texture);
     printWithString(printer, "VARIETY: ", variety);
-
     printer.println();
     printer.justify('L');
-    printer.println(F("   PARAMETER     VALUE"));
-    printer.justify('L');
+    printer.println(F("   Parameter     Value"));
+    printer.justify('S');
     printWithSpace(printer, "   Nitrogen-------",nitro, "%");
     printWithSpace(printer, "   Phosphorus-----", phos, "ppm");
     printWithSpace(printer, "   Potassium------", potas, "cmol/kg");
     printWithSpace(printer, "   pH-------------", pH, " ");
     printWithSpace(printer, "   EC-------------", ec, "mS/cm");
     printWithSpace(printer, "   Moisture-------", moisture, "%");
-    
     printer.println();
     printer.justify('L');
-    printer.println(F("   PARAMETER     LABEL"));
-    printer.justify('L');
+    printer.println(F("   Parameter     Label"));
+    printer.justify('S');
     printWithText(printer, "   Nitrogen-------", nit_value.c_str(), "");
     printWithText(printer, "   Phosphorus-----", phos_value.c_str(), "");
     printWithText(printer, "   Potassium------", potas_value.c_str(), "");
     printWithText(printer, "   pH-------------", ph_value.c_str(), "");
     printWithText(printer, "   EC-------------", soil_salinity_class.c_str(), "");
     printWithText(printer, "   Moisture-------", mois_value.c_str(), "");
-
-    printer.println("--------------------------------");
-    printer.justify('C'); // center the image
-    printer.boldOn();
-    printer.println(F("NUTRIENT RECOMMENDATION"));
-    printer.boldOff();
-    printer.setSize('S');
-    printer.println(F("kg/ha"));
-
     printer.println();
-
+    printer.justify('C'); // center the image
     printer.setSize('S');
-    printer.justify('C');
+    printer.println(F("Nutrients kg/ha"));
     printWithInt(printer, "N:",nit_both);
     printWithInt(printer, "P:", phos_both);
     printWithInt(printer, "K:", potas_both);
-
-    printer.println("--------------------------------");
-    printer.justify('C'); 
-    printer.boldOn();
-    printer.println(F("FERTILIZER RECOMMENDATION"));
-    printer.boldOff();
-    printer.setSize('S');
-    printer.println(F("(per ha)"));
-
     printer.println();
-    printer.justify('C');
+    printer.println(F("Fertilizers (per ha)"));
     printer.print("Basal Application: ");
-    const char *basal = "10-20 bags, Organic Fertilizer";
-
+    const char *basal = "10-20 bags,\n Organic Fertilizer";
     // Print centered text
     printer.println();
-    printer.justify('C');
     printCenteredText(printer, basal);
-
     printer.println();
     const char *topdressing1 = "1st TopDressing(5-7 DAT):";
-    printer.println();
     printCenteredText(printer, topdressing1);
-    printer.println();
+    printer.setSize('S');
     printer.print(get_number1);
     printer.print(" bags ");
     printer.print(rounded_value1);
     printer.println(" kg");
-
     printer.print(n_fil_val);
     printer.print("-");
     printer.print(p_fil_val);
     printer.print("-");
     printer.print(k_fil_val);
     printer.println();
-
+    printer.setSize('S');
     printer.print(get_number_second);
     printer.print(" bags ");
     printer.print(rounded_value2);
     printer.println(" kg");
-
     printer.print(n_fil_val_second);
     printer.print("-");
     printer.print(p_fil_val_second);
     printer.print("-");
     printer.print(k_fil_val_second);
     printer.println();
-
+    printer.setSize('S');
     printer.print(get_number_third);
     printer.print(" bags ");
     printer.print(rounded_value3);
     printer.println(" kg");
-
     printer.print(n_fil_val_third);
     printer.print("-");
     printer.print(p_fil_val_third);
     printer.print("-");
     printer.print(k_fil_val_third);
-
+    printer.setSize('S');
+    printer.println();
     const char *topdressing2 = "2nd TopDressing(20-24 DAT):";
-    printer.println();
     printCenteredText(printer, topdressing2);
-    printer.println();
+    printer.setSize('S');
     printer.print(get_number_split2);
     printer.print(" bags ");
     printer.print(rounded_value4);
     printer.println(" kg");
-
     printer.print(n_fil_val_split2);
     printer.print("-");
     printer.print(p_fil_val_split2);
     printer.print("-");
     printer.print(k_fil_val_split2);
     printer.println();
-
+    printer.setSize('S');
     printer.print(get_number_split2_second);
     printer.print(" bags ");
     printer.print(rounded_value5);
     printer.println(" kg");
-
     printer.print(n_fil_val_split2_second);
     printer.print("-");
     printer.print(p_fil_val_split2_second);
     printer.print("-");
     printer.print(k_fil_val_split2_second);
     printer.println();
-
     const char *topdressing3 = "3rd TopDressing(30-35 DAT):";
-    printer.println();
+    printer.setSize('S');
     printCenteredText(printer, topdressing3);
-    printer.println();
     printer.print(get_number_split3);
     printer.print(" bags ");
     printer.print(rounded_value6);
     printer.println(" kg");
-
+    printer.setSize('S');
     printer.print(n_fil_val_split3);
     printer.print("-");
     printer.print(p_fil_val_split3);
     printer.print("-");
     printer.print(k_fil_val_split3);
     printer.println();
-
+    printer.setSize('S');
     printer.print(get_number_split3_second);
     printer.print(" bags ");
     printer.print(rounded_value7);
     printer.println(" kg");
-
     printer.print(n_fil_val_split3_second);
     printer.print("-");
     printer.print(p_fil_val_split3_second);
     printer.print("-");
     printer.print(k_fil_val_split3_second);
     printer.println();
-
-
-
-    printer.justify('C');
-    printer.setSize('S');
+    printer.boldOn();
     printer.print("It is recommended to test your");
     printer.println();
     printer.print("soil every planting season for");
     printer.println();
     printer.print("efficient farming. Thank You!");
     printer.println();
-    printer.boldOn();
     printer.println();
-    printer.println("Produced by: SENSOIL @2024");
+    printer.println("Produced by: SENSOIL");
     printer.boldOff();
-    printer.feed(3); 
+    printer.boldOff();
+    printer.feed(2); 
+    
+    printer.sleep();      // Tell printer to sleep
+    printer.wake();       // MUST wake() before printing again, even if reset
+    printer.setDefault(); // Restore printer to defaults
+  }
+  oldButtonState = buttonState;
+}
+
+void printDataNow(){
+  DateTime now = rtc.now();
+
+  Serial.print(now.year());
+  Serial.print('/');
+  Serial.print(now.month(), DEC);
+  Serial.print('/');
+  Serial.print(now.day(), DEC);
+  Serial.print(" (");
+  Serial.print(daysOfTheWeek[now.dayOfTheWeek()]);
+  Serial.print(") ");
+  Serial.print(now.hour(), DEC);
+  Serial.print(':');
+  Serial.print(now.minute(), DEC);
+  Serial.print(':');
+  Serial.print(now.second(), DEC);
+  Serial.println();
+
+  hour = now.hour();
+
+  buttonState  = digitalRead(PRINT_BUTTON);
+  if (buttonState != oldButtonState &&
+    buttonState == HIGH)
+  {
+    if (hour > 12) {
+        hour -= 12; 
+    }
+    printer.justify('C'); 
+    printer.setSize('L');  
+    printer.boldOn();
+    printer.println(F("S E N S O I L"));
+    printer.setSize('S');  
+    printer.println();
+    printer.print("Date:");
+    printer.print(now.year());
+    printer.print('/');
+    printer.print(now.month());
+    printer.print('/');
+    printer.println(now.day());
+    printer.println(daysOfTheWeek[now.dayOfTheWeek()]);
+    printWithString(printer, "SEASON: ",season);
+    printWithString(printer, "TEXTURE: ", texture);
+    printWithString(printer, "VARIETY: ", variety);
+    printer.println();
+    printer.justify('L');
+    printer.println(F("   Parameter     Value"));
+    printer.justify('S');
+    printWithSpace(printer, "   Nitrogen-------",nitro, "%");
+    printWithSpace(printer, "   Phosphorus-----", phos, "ppm");
+    printWithSpace(printer, "   Potassium------", potas, "cmol/kg");
+    printWithSpace(printer, "   pH-------------", pH, " ");
+    printWithSpace(printer, "   EC-------------", ec, "mS/cm");
+    printWithSpace(printer, "   Moisture-------", moisture, "%");
+    printer.println();
+    printer.justify('L');
+    printer.println(F("   Parameter     Label"));
+    printer.justify('S');
+    printWithText(printer, "   Nitrogen-------", nit_value.c_str(), "");
+    printWithText(printer, "   Phosphorus-----", phos_value.c_str(), "");
+    printWithText(printer, "   Potassium------", potas_value.c_str(), "");
+    printWithText(printer, "   pH-------------", ph_value.c_str(), "");
+    printWithText(printer, "   EC-------------", soil_salinity_class.c_str(), "");
+    printWithText(printer, "   Moisture-------", mois_value.c_str(), "");
+    printer.println();
+    printer.justify('C'); // center the image
+    printer.setSize('S');
+    printer.println(F("Nutrients kg/ha"));
+    printWithInt(printer, "N:",nit_both);
+    printWithInt(printer, "P:", phos_both);
+    printWithInt(printer, "K:", potas_both);
+    printer.println();
+    printer.println(F("Fertilizers (per ha)"));
+    printer.print("Basal Application: ");
+    const char *basal = "10-20 bags,\n Organic Fertilizer";
+    // Print centered text
+    printer.println();
+    printCenteredText(printer, basal);
+    printer.println();
+    const char *topdressing1 = "1st TopDressing(5-7 DAT):";
+    printCenteredText(printer, topdressing1);
+    printer.setSize('S');
+    printer.print(get_number1);
+    printer.print(" bags ");
+    printer.print(rounded_value1);
+    printer.println(" kg");
+    printer.print(n_fil_val);
+    printer.print("-");
+    printer.print(p_fil_val);
+    printer.print("-");
+    printer.print(k_fil_val);
+    printer.println();
+    printer.setSize('S');
+    printer.print(get_number_second);
+    printer.print(" bags ");
+    printer.print(rounded_value2);
+    printer.println(" kg");
+    printer.print(n_fil_val_second);
+    printer.print("-");
+    printer.print(p_fil_val_second);
+    printer.print("-");
+    printer.print(k_fil_val_second);
+    printer.println();
+    printer.setSize('S');
+    printer.print(get_number_third);
+    printer.print(" bags ");
+    printer.print(rounded_value3);
+    printer.println(" kg");
+    printer.print(n_fil_val_third);
+    printer.print("-");
+    printer.print(p_fil_val_third);
+    printer.print("-");
+    printer.print(k_fil_val_third);
+    printer.setSize('S');
+    printer.println();
+    const char *topdressing2 = "2nd TopDressing(20-24 DAT):";
+    printCenteredText(printer, topdressing2);
+    printer.setSize('S');
+    printer.print(get_number_split2);
+    printer.print(" bags ");
+    printer.print(rounded_value4);
+    printer.println(" kg");
+    printer.print(n_fil_val_split2);
+    printer.print("-");
+    printer.print(p_fil_val_split2);
+    printer.print("-");
+    printer.print(k_fil_val_split2);
+    printer.println();
+    printer.setSize('S');
+    printer.print(get_number_split2_second);
+    printer.print(" bags ");
+    printer.print(rounded_value5);
+    printer.println(" kg");
+    printer.print(n_fil_val_split2_second);
+    printer.print("-");
+    printer.print(p_fil_val_split2_second);
+    printer.print("-");
+    printer.print(k_fil_val_split2_second);
+    printer.println();
+    const char *topdressing3 = "3rd TopDressing(30-35 DAT):";
+    printer.setSize('S');
+    printCenteredText(printer, topdressing3);
+    printer.print(get_number_split3);
+    printer.print(" bags ");
+    printer.print(rounded_value6);
+    printer.println(" kg");
+    printer.setSize('S');
+    printer.print(n_fil_val_split3);
+    printer.print("-");
+    printer.print(p_fil_val_split3);
+    printer.print("-");
+    printer.print(k_fil_val_split3);
+    printer.println();
+    printer.setSize('S');
+    printer.print(get_number_split3_second);
+    printer.print(" bags ");
+    printer.print(rounded_value7);
+    printer.println(" kg");
+    printer.print(n_fil_val_split3_second);
+    printer.print("-");
+    printer.print(p_fil_val_split3_second);
+    printer.print("-");
+    printer.print(k_fil_val_split3_second);
+    printer.println();
+    printer.boldOn();
+    printer.print("It is recommended to test your");
+    printer.println();
+    printer.print("soil every planting season for");
+    printer.println();
+    printer.print("efficient farming. Thank You!");
+    printer.println();
+    printer.println();
+    printer.println("Produced by: SENSOIL");
+    printer.boldOff();
+    printer.boldOff();
+    printer.feed(2); 
     
     printer.sleep();      // Tell printer to sleep
     printer.wake();       // MUST wake() before printing again, even if reset
