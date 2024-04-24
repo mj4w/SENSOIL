@@ -667,6 +667,8 @@ void dwinListen(){
       switch (address.toInt()) {
         case 185:
             filename = var1;
+            // varfile = extractPrefix(fileName); 
+            // printDataLog(varfile);
             readDataAndAssignVariables(var1);
             delay(100);
             break;
@@ -3499,19 +3501,19 @@ void setup() {
     rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
     // This line sets the RTC with an explicit date & time, for example to set
     // January 21, 2014 at 3am you would call:
-    // rtc.adjust(DateTime(2024, 4, 7, 15, 31, 0));
+    // rtc.adjust(DateTime(2024, 4, 23, 13, 36, 0));
   }
   // When time needs to be re-set on a previously configured device, the
   // following line sets the RTC to the date & time this sketch was compiled
   rtc.adjust(DateTime(F(__DATE__), F(__TIME__)));
   // This line sets the RTC with an explicit date & time, for example to set
   // January 21, 2014 at 3am you would call:
-  // rtc.adjust(DateTime(2024, 4, 9, 14, 44, 0));
+  // rtc.adjust(DateTime(2024, 4, 23, 13, 36, 0));
   // // List all files on the SD card
   sendDateOverSerial();
 }
 
-void loop() {
+void loop() { 
   dwinListen();
 
 }
@@ -4158,6 +4160,164 @@ void printData(String prefix){
     printer.setDefault(); // Restore printer to defaults
   }
   oldButtonState = buttonState;
+}
+
+void printDataLog(String prefix){
+    DateTime now = rtc.now();
+    printer.justify('C'); 
+    printer.setSize('L');  
+    printer.boldOn();
+    printer.println(F("S E N S O I L"));
+    printer.setSize('S');  
+    printer.println();
+    printer.print(F("No: "));
+    printer.println(prefix);
+    printer.print("Date:");
+    printer.print(year);
+    printer.print('/');
+    printer.print(month);
+    printer.print('/');
+    printer.println(day);
+    printer.println(dayOfTheWeek);
+    printWithString(printer, "SEASON: ",season);
+    printWithString(printer, "TEXTURE: ", texture);
+    printWithString(printer, "VARIETY: ", variety);
+    printer.println();
+    printer.justify('L');
+    printer.println(F("   Parameter     Value"));
+    printer.justify('S');
+    printWithSpace(printer, "   Nitrogen-------",nitro, "%");
+    printWithSpace(printer, "   Phosphorus-----", phos, "ppm");
+    printWithSpace(printer, "   Potassium------", potas, "cmol/kg");
+    printWithSpace(printer, "   pH-------------", pH, " ");
+    printWithSpace(printer, "   EC-------------", ec, "mS/cm");
+    printWithSpace(printer, "   Moisture-------", moisture, "%");
+    printer.println();
+    printer.justify('L');
+    printer.println(F("   Parameter     Label"));
+    printer.justify('S');
+    printWithText(printer, "   Nitrogen-------", nit_value.c_str(), "");
+    printWithText(printer, "   Phosphorus-----", phos_value.c_str(), "");
+    printWithText(printer, "   Potassium------", potas_value.c_str(), "");
+    printWithText(printer, "   pH-------------", ph_value.c_str(), "");
+    printWithText(printer, "   EC-------------", soil_salinity_class.c_str(), "");
+    printWithText(printer, "   Moisture-------", mois_value.c_str(), "");
+    printer.println();
+    printer.justify('C'); // center the image
+    printer.setSize('S');
+    printer.println(F("Nutrients kg/ha"));
+    printWithInt(printer, "N:",nit_both);
+    printWithInt(printer, "P:", phos_both);
+    printWithInt(printer, "K:", potas_both);
+    printer.println();
+    printer.println(F("Fertilizers (per ha)"));
+    printer.print("Basal Application: ");
+    const char *basal = "10-20 bags,\n Organic Fertilizer";
+    // Print centered text
+    printer.println();
+    printCenteredText(printer, basal);
+    printer.println();
+    const char *topdressing1 = "1st TopDressing(5-7 DAT):";
+    printCenteredText(printer, topdressing1);
+    printer.setSize('S');
+    printer.print(get_number1);
+    printer.print(" bags ");
+    printer.print(rounded_value1);
+    printer.println(" kg");
+    printer.print(n_fil_val);
+    printer.print("-");
+    printer.print(p_fil_val);
+    printer.print("-");
+    printer.print(k_fil_val);
+    printer.println();
+    printer.setSize('S');
+    printer.print(get_number_second);
+    printer.print(" bags ");
+    printer.print(rounded_value2);
+    printer.println(" kg");
+    printer.print(n_fil_val_second);
+    printer.print("-");
+    printer.print(p_fil_val_second);
+    printer.print("-");
+    printer.print(k_fil_val_second);
+    printer.println();
+    printer.setSize('S');
+    printer.print(get_number_third);
+    printer.print(" bags ");
+    printer.print(rounded_value3);
+    printer.println(" kg");
+    printer.print(n_fil_val_third);
+    printer.print("-");
+    printer.print(p_fil_val_third);
+    printer.print("-");
+    printer.print(k_fil_val_third);
+    printer.setSize('S');
+    printer.println();
+    const char *topdressing2 = "2nd TopDressing(20-24 DAT):";
+    printCenteredText(printer, topdressing2);
+    printer.setSize('S');
+    printer.print(get_number_split2);
+    printer.print(" bags ");
+    printer.print(rounded_value4);
+    printer.println(" kg");
+    printer.print(n_fil_val_split2);
+    printer.print("-");
+    printer.print(p_fil_val_split2);
+    printer.print("-");
+    printer.print(k_fil_val_split2);
+    printer.println();
+    printer.setSize('S');
+    printer.print(get_number_split2_second);
+    printer.print(" bags ");
+    printer.print(rounded_value5);
+    printer.println(" kg");
+    printer.print(n_fil_val_split2_second);
+    printer.print("-");
+    printer.print(p_fil_val_split2_second);
+    printer.print("-");
+    printer.print(k_fil_val_split2_second);
+    printer.println();
+    const char *topdressing3 = "3rd TopDressing(30-35 DAT):";
+    printer.setSize('S');
+    printCenteredText(printer, topdressing3);
+    printer.print(get_number_split3);
+    printer.print(" bags ");
+    printer.print(rounded_value6);
+    printer.println(" kg");
+    printer.setSize('S');
+    printer.print(n_fil_val_split3);
+    printer.print("-");
+    printer.print(p_fil_val_split3);
+    printer.print("-");
+    printer.print(k_fil_val_split3);
+    printer.println();
+    printer.setSize('S');
+    printer.print(get_number_split3_second);
+    printer.print(" bags ");
+    printer.print(rounded_value7);
+    printer.println(" kg");
+    printer.print(n_fil_val_split3_second);
+    printer.print("-");
+    printer.print(p_fil_val_split3_second);
+    printer.print("-");
+    printer.print(k_fil_val_split3_second);
+    printer.println();
+    printer.boldOn();
+    printer.print("It is recommended to test your");
+    printer.println();
+    printer.print("soil every planting season for");
+    printer.println();
+    printer.print("efficient farming. Thank You!");
+    printer.println();
+    printer.println();
+    printer.println("Produced by: SENSOIL");
+    printer.boldOff();
+    printer.boldOff();
+    printer.feed(2); 
+    
+    printer.sleep();      // Tell printer to sleep
+    printer.wake();       // MUST wake() before printing again, even if reset
+    printer.setDefault(); // Restore printer to defaults
 }
 
 void printDataNow(){
