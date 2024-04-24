@@ -787,20 +787,146 @@ void dwinListen(){
         // Display Printing
 
 
-        case 016:
+        case 7016:
           filename = var1;
           varfile = extractPrefix(filename); 
           printDataLog(varfile);
           readDataAndAssignVariables(var1);
           delay(100);
           break;
-        case 032:
+        case 7017:
           filename = var2;
           varfile = extractPrefix(filename); 
           printDataLog(varfile);
           readDataAndAssignVariables(var2);
           delay(100);
           break;
+        case 7018:
+            filename = var3;
+            varfile = extractPrefix(filename); 
+            printDataLog(varfile);
+            readDataAndAssignVariables(var3);
+            delay(100);
+            break;
+        case 7019:
+            filename = var4;
+            varfile = extractPrefix(filename); 
+            printDataLog(varfile);
+            readDataAndAssignVariables(var4);
+            delay(100);
+            break;
+        case 7020:
+            filename = var5;
+            varfile = extractPrefix(filename); 
+            printDataLog(varfile);
+            readDataAndAssignVariables(var5);
+            delay(100);
+            break;
+        case 7021:
+            filename = var6;
+            varfile = extractPrefix(filename); 
+            printDataLog(varfile);
+            readDataAndAssignVariables(var6);
+            delay(100);
+            break;
+        case 7022:
+            filename = var7;
+            varfile = extractPrefix(filename); 
+            printDataLog(varfile);
+            readDataAndAssignVariables(var7);
+            delay(100);
+            break;
+        case 7023:
+            filename = var8;
+            varfile = extractPrefix(filename); 
+            printDataLog(varfile);
+            readDataAndAssignVariables(var8);
+            delay(100);
+            break;
+        case 7024:
+            filename = var9;
+            varfile = extractPrefix(filename); 
+            printDataLog(varfile);
+            readDataAndAssignVariables(var9);
+            delay(100);
+            break;
+        case 7025:
+            filename = var10;
+            varfile = extractPrefix(filename); 
+            printDataLog(varfile);
+            readDataAndAssignVariables(var10);
+            delay(100);
+            break;
+        case 7032:
+            filename = var11;
+            varfile = extractPrefix(filename); 
+            printDataLog(varfile);
+            readDataAndAssignVariables(var11);
+            delay(100);
+            break;
+        case 7033:
+            filename = var12;
+            varfile = extractPrefix(filename); 
+            printDataLog(varfile);
+            readDataAndAssignVariables(var12);
+            delay(100);
+            break;
+        case 7034:
+            filename = var13;
+            varfile = extractPrefix(filename); 
+            printDataLog(varfile);
+            readDataAndAssignVariables(var13);
+            delay(100);
+            break;
+        case 7035:
+            filename = var14;
+            varfile = extractPrefix(filename); 
+            printDataLog(varfile);
+            readDataAndAssignVariables(var14);
+            delay(100);
+            break;
+        case 7036:
+            filename = var15;
+            varfile = extractPrefix(filename); 
+            printDataLog(varfile);
+            readDataAndAssignVariables(var15);
+            delay(100);
+            break;
+        case 7037:
+            filename = var16;
+            varfile = extractPrefix(filename); 
+            printDataLog(varfile);
+            readDataAndAssignVariables(var16);
+            delay(100);
+            break;
+        case 7038:
+            filename = var17;
+            varfile = extractPrefix(filename); 
+            printDataLog(varfile);
+            readDataAndAssignVariables(var17);
+            delay(100);
+            break;
+        case 7039:
+            filename = var18;
+            varfile = extractPrefix(filename); 
+            printDataLog(varfile);
+            readDataAndAssignVariables(var18);
+            delay(100);
+            break;
+        case 7040:
+            filename = var19;
+            varfile = extractPrefix(filename); 
+            printDataLog(varfile);
+            readDataAndAssignVariables(var19);
+            delay(100);
+            break;
+        case 7041:
+            filename = var20;
+            varfile = extractPrefix(filename); 
+            printDataLog(varfile);
+            readDataAndAssignVariables(var20);
+            delay(100);
+            break;
 
         // Add more cases for other addresses as needed
 
