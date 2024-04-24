@@ -663,7 +663,7 @@ void dwinListen(){
       //   deleteFile(filename);
       //   Serial.println(filename);
       // }
-
+      String varfile;
       switch (address.toInt()) {
         case 185:
             filename = var1;
@@ -781,6 +781,24 @@ void dwinListen(){
         // Format All
         case 520:
           formatSDCard();
+          delay(100);
+          break;
+
+        // Display Printing
+
+
+        case 016:
+          filename = var1;
+          varfile = extractPrefix(filename); 
+          printDataLog(varfile);
+          readDataAndAssignVariables(var1);
+          delay(100);
+          break;
+        case 032:
+          filename = var2;
+          varfile = extractPrefix(filename); 
+          printDataLog(varfile);
+          readDataAndAssignVariables(var2);
           delay(100);
           break;
 
